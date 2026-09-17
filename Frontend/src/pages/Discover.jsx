@@ -15,12 +15,9 @@ const DAYS = [
 ];
 const SKILL_LEVELS = ["", "beginner", "intermediate", "advanced"];
 
-const inputStyle = {
-  padding: "8px 10px",
-  fontSize: "13px",
-  borderRadius: "6px",
-  border: "1px solid #cbd5e1",
-};
+const inputClass =
+  "px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white " +
+  "focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500";
 
 const emptyFilters = {
   activity: "",
@@ -31,6 +28,24 @@ const emptyFilters = {
   skillLevel: "",
   radiusKm: "",
 };
+
+const MatchCardSkeleton = () => (
+  <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs animate-pulse">
+    <div className="flex gap-3.5 items-start">
+      <div className="w-11 h-11 rounded-full bg-slate-200 shrink-0" />
+      <div className="flex-1 space-y-2">
+        <div className="h-3.5 w-1/3 bg-slate-200 rounded" />
+        <div className="h-3 w-2/3 bg-slate-100 rounded" />
+      </div>
+      <div className="h-8 w-12 bg-slate-200 rounded" />
+    </div>
+    <div className="mt-4 pt-3.5 border-t border-slate-200 space-y-2">
+      <div className="h-2 bg-slate-100 rounded-full" />
+      <div className="h-2 bg-slate-100 rounded-full" />
+      <div className="h-2 bg-slate-100 rounded-full" />
+    </div>
+  </div>
+);
 
 const Discover = () => {
   const [activityOptions, setActivityOptions] = useState([]);
@@ -103,33 +118,28 @@ const Discover = () => {
     setMatches((prev) => prev?.filter((m) => m.profile.user?._id !== blockedUserId) ?? prev);
   };
 
+  const clearFilters = () => {
+    setFilters(emptyFilters);
+  };
+
+  const hasActiveFilters = Object.values(filters).some(Boolean);
+
   return (
-    <div style={{ maxWidth: "1040px", margin: "24px auto", padding: "0 16px" }}>
-      <h1 style={{ fontSize: "26px", color: "#0f172a", margin: "0 0 4px" }}>
-        Discover partners
-      </h1>
-      <p style={{ fontSize: "14px", color: "#64748b", margin: "0 0 20px" }}>
+    <div className="max-w-5xl mx-auto px-4 my-6">
+      <h1 className="text-2xl font-bold text-slate-900 mb-1">Discover partners</h1>
+      <p className="text-sm text-slate-600 mb-5">
         Ranked by a weighted match score across activity, location,
         availability, skill level, and rating.
       </p>
 
       <form
         onSubmit={runSearch}
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "8px",
-          padding: "16px",
-          backgroundColor: "#fff",
-          border: "1px solid #e2e8f0",
-          borderRadius: "10px",
-          marginBottom: "24px",
-        }}
+        className="bg-white border border-slate-200/80 rounded-2xl p-4 mb-6 flex flex-wrap gap-2 items-center"
       >
         <select
           value={filters.activity}
           onChange={(e) => setFilter("activity", e.target.value)}
-          style={inputStyle}
+          className={inputClass}
         >
           <option value="">Any activity</option>
           {activityOptions.map((a) => (
@@ -144,13 +154,13 @@ const Discover = () => {
           placeholder="City"
           value={filters.city}
           onChange={(e) => setFilter("city", e.target.value)}
-          style={inputStyle}
+          className={`${inputClass} w-28`}
         />
 
         <select
           value={filters.radiusKm}
           onChange={(e) => setFilter("radiusKm", e.target.value)}
-          style={inputStyle}
+          className={inputClass}
         >
           <option value="">Any distance</option>
           <option value="5">5 km</option>
@@ -162,7 +172,7 @@ const Discover = () => {
         <select
           value={filters.day}
           onChange={(e) => setFilter("day", e.target.value)}
-          style={inputStyle}
+          className={inputClass}
         >
           {DAYS.map((day) => (
             <option key={day} value={day}>
@@ -175,19 +185,19 @@ const Discover = () => {
           type="time"
           value={filters.startTime}
           onChange={(e) => setFilter("startTime", e.target.value)}
-          style={inputStyle}
+          className={inputClass}
         />
         <input
           type="time"
           value={filters.endTime}
           onChange={(e) => setFilter("endTime", e.target.value)}
-          style={inputStyle}
+          className={inputClass}
         />
 
         <select
           value={filters.skillLevel}
           onChange={(e) => setFilter("skillLevel", e.target.value)}
-          style={inputStyle}
+          className={inputClass}
         >
           {SKILL_LEVELS.map((level) => (
             <option key={level} value={level}>
@@ -198,79 +208,67 @@ const Discover = () => {
 
         <button
           type="submit"
-          style={{
-            padding: "8px 16px",
-            fontSize: "13px",
-            fontWeight: 600,
-            color: "#fff",
-            backgroundColor: "#2563eb",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-          }}
+          className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 cursor-pointer"
         >
           Search
         </button>
+
+        {hasActiveFilters && (
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-800 cursor-pointer"
+          >
+            Clear filters
+          </button>
+        )}
       </form>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-        <span style={{ fontSize: "14px", color: "#64748b", fontWeight: 500 }}>
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-sm font-medium text-slate-600">
           {matches ? `${matches.length} ${matches.length === 1 ? "partner" : "partners"} found` : ""}
         </span>
-        <div style={{ display: "flex", gap: "4px", backgroundColor: "#f1f5f9", padding: "4px", borderRadius: "8px" }}>
+        <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
           <button
             type="button"
             onClick={() => setViewMode("list")}
-            style={{
-              padding: "6px 12px",
-              fontSize: "13px",
-              fontWeight: 600,
-              borderRadius: "6px",
-              border: "none",
-              cursor: "pointer",
-              backgroundColor: viewMode === "list" ? "#ffffff" : "transparent",
-              color: viewMode === "list" ? "#0f172a" : "#64748b",
-              boxShadow: viewMode === "list" ? "0 1px 2px rgba(0,0,0,0.05)" : "none",
-            }}
+            className={`px-3 py-1.5 text-sm font-semibold rounded-md cursor-pointer transition-colors ${
+              viewMode === "list" ? "bg-white text-slate-900 shadow-xs" : "text-slate-500"
+            }`}
           >
             📋 List
           </button>
           <button
             type="button"
             onClick={() => setViewMode("map")}
-            style={{
-              padding: "6px 12px",
-              fontSize: "13px",
-              fontWeight: 600,
-              borderRadius: "6px",
-              border: "none",
-              cursor: "pointer",
-              backgroundColor: viewMode === "map" ? "#ffffff" : "transparent",
-              color: viewMode === "map" ? "#0f172a" : "#64748b",
-              boxShadow: viewMode === "map" ? "0 1px 2px rgba(0,0,0,0.05)" : "none",
-            }}
+            className={`px-3 py-1.5 text-sm font-semibold rounded-md cursor-pointer transition-colors ${
+              viewMode === "map" ? "bg-white text-slate-900 shadow-xs" : "text-slate-500"
+            }`}
           >
             🗺️ Map
           </button>
         </div>
       </div>
 
-      {loading && <p style={{ color: "#64748b" }}>Loading matches...</p>}
-      {errorMsg && <p style={{ color: "#dc2626" }}>{errorMsg}</p>}
+      {errorMsg && <p className="text-sm text-red-600 mb-3">{errorMsg}</p>}
       {!loading && matches && matches.length === 0 && (
-        <p style={{ color: "#64748b" }}>No partners found.</p>
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-8 text-center">
+          <p className="text-sm text-slate-600 m-0">
+            No partners found. Try widening your filters or check back later.
+          </p>
+        </div>
       )}
 
       {viewMode === "map" ? (
         <PartnersMap matches={matches || []} />
+      ) : loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <MatchCardSkeleton key={i} />
+          ))}
+        </div>
       ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))",
-            gap: "16px",
-          }}
-        >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {matches?.map((match, index) => (
             <MatchCard
               key={match.profile._id}

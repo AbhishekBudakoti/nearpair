@@ -52,6 +52,22 @@ const searchPartners = async (req, res) => {
 
   // Filter by availability
   if (day) {
+    const allowedDays = [
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+      "sunday",
+    ];
+
+    if (!allowedDays.includes(String(day).toLowerCase())) {
+      const error = new Error("Invalid day");
+      error.statusCode = 400;
+      throw error;
+    }
+
     const availabilityFilter = {
       day,
     };

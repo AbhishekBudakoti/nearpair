@@ -3,6 +3,7 @@ import apiClient from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
 import UserActionsMenu from "../components/UserActionsMenu";
+import ReviewModal from "../components/ReviewModal";
 
 // Mirrors SESSION_STATUSES in Backend/models/session.model.js.
 const STATUS_STYLE = {
@@ -49,7 +50,7 @@ const emptyForm = {
   locationName: "",
 };
 
-const SessionCard = ({ session, currentUserId, busy, onAction, onBlocked }) => {
+const SessionCard = ({ session, currentUserId, busy, onAction, onBlocked, canReview, onReview }) => {
   const partner = (session.participants || []).find(
     (p) => (p._id || p).toString() !== currentUserId
   );
@@ -132,6 +133,16 @@ const SessionCard = ({ session, currentUserId, busy, onAction, onBlocked }) => {
             </button>
           )}
 
+          {canReview && (
+            <button
+              type="button"
+              onClick={() => onReview(session)}
+              className="px-3 py-1.5 text-xs font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600 cursor-pointer"
+            >
+              Leave a review
+            </button>
+          )}
+
           {canCancel && !canRespond && (
             <button
               type="button"
@@ -170,6 +181,8 @@ const Sessions = () => {
   const [busyId, setBusyId] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [okMsg, setOkMsg] = useState("");
+  const [pendingReviewIds, setPendingReviewIds] = useState(new Set());
+  const [reviewingSession, setReviewingSession] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -197,15 +210,40 @@ const Sessions = () => {
     loadMatches();
   };
 
+  // Drives the "Leave a review" button: completed sessions the current user
+  // hasn't already rated.
+  const loadPendingReviews = useCallback(() => {
+    apiClient
+      .get("/reviews/pending")
+      .then(({ data }) => {
+        const ids = (data.data?.sessions || []).map((s) => s._id);
+        setPendingReviewIds(new Set(ids));
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     load();
     loadMatches();
+    loadPendingReviews();
 
     apiClient
       .get("/activities")
       .then(({ data }) => setActivities(data.data?.activities || []))
       .catch(() => {});
-  }, [load, loadMatches]);
+  }, [load, loadMatches, loadPendingReviews]);
+
+  const handleReviewClose = ({ submitted } = {}) => {
+    if (submitted && reviewingSession) {
+      setPendingReviewIds((prev) => {
+        const next = new Set(prev);
+        next.delete(reviewingSession._id);
+        return next;
+      });
+      setOkMsg("Review submitted.");
+    }
+    setReviewingSession(null);
+  };
 
   // Depend on the ids as a stable string, not the `sessions` array: every
   // reload produces a new array identity, which would otherwise make the
@@ -421,11 +459,25 @@ const Sessions = () => {
                   busy={busyId === session._id}
                   onAction={act}
                   onBlocked={handleBlocked}
+                  canReview={session.status === "completed" && pendingReviewIds.has(session._id)}
+                  onReview={setReviewingSession}
                 />
               ))}
             </div>
           )}
         </>
+      )}
+
+      {reviewingSession && (
+        <ReviewModal
+          sessionId={reviewingSession._id}
+          partnerName={
+            (reviewingSession.participants || []).find(
+              (p) => (p._id || p).toString() !== currentUserId
+            )?.name
+          }
+          onClose={handleReviewClose}
+        />
       )}
     </div>
   );

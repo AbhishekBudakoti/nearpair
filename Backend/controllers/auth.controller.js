@@ -18,6 +18,12 @@ const register=async(req,res)=>{
         throw error;
     }
 
+    if (typeof name !== "string" || typeof email !== "string" || typeof password !== "string") {
+        const error = new Error("Name, email and password must be text");
+        error.statusCode = 400;
+        throw error;
+    }
+
     email = email.toLowerCase().trim();
 
   // Check existing user
@@ -60,6 +66,12 @@ const login=async(req,res)=>{
     if(!email||!password){
         const error=new Error("Enter the username and password")
         error.statusCode=400;
+        throw error;
+    }
+
+    if (typeof email !== "string" || typeof password !== "string") {
+        const error = new Error("Enter the username and password");
+        error.statusCode = 400;
         throw error;
     }
 

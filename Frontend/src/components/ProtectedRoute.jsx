@@ -12,7 +12,7 @@ const ProtectedRoute = () => {
 
   if (loading) {
     return (
-      <div style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>
+      <div className="text-center text-sm text-slate-500 py-16">
         Checking authentication...
       </div>
     );

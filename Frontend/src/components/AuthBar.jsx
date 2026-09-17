@@ -18,22 +18,14 @@ export const AuthBar = () => {
   };
 
   if (loading) {
-    return <span style={{ fontSize: "13px", color: "#64748b" }}>Checking auth status...</span>;
+    return <span className="text-sm text-slate-500">Checking auth status...</span>;
   }
 
   if (!user) {
     return (
       <Link
         to="/login"
-        style={{
-          padding: "6px 12px",
-          fontSize: "13px",
-          fontWeight: 600,
-          backgroundColor: "#2563eb",
-          color: "#fff",
-          borderRadius: "6px",
-          textDecoration: "none",
-        }}
+        className="px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 no-underline"
       >
         Log in
       </Link>
@@ -41,21 +33,13 @@ export const AuthBar = () => {
   }
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-      <span style={{ fontSize: "14px", fontWeight: "500", color: "#1e293b" }}>
+    <div className="flex items-center gap-2.5">
+      <span className="hidden sm:inline text-sm font-medium text-slate-800">
         👤 {user.name || user.email}
       </span>
       <button
         onClick={handleLogout}
-        style={{
-          padding: "6px 12px",
-          fontSize: "13px",
-          backgroundColor: "#ef4444",
-          color: "#fff",
-          border: "none",
-          borderRadius: "6px",
-          cursor: "pointer",
-        }}
+        className="px-2.5 sm:px-3 py-1.5 text-sm font-semibold text-white bg-red-500 rounded-lg hover:bg-red-600 cursor-pointer whitespace-nowrap"
       >
         Logout
       </button>

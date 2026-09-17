@@ -1,15 +1,21 @@
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 
 const apiRoutes = require("./routes");
 const notFound = require("./middlewares/notFound.middleware");
 const errorHandler = require("./middlewares/error.midlleware");
+const { apiLimiter, authLimiter } = require("./middlewares/rateLimit.middleware");
+const sanitizeBody = require("./middlewares/sanitizeBody.middleware");
 
 /**
  * Express Application initialization and middleware pipeline setup.
  */
 const app = express();
+
+// --- SECURITY HEADERS ---
+app.use(helmet());
 
 // --- CORS CONFIGURATION ---
 app.use(
@@ -18,6 +24,12 @@ app.use(
         credentials: true,
     })
 );
+
+// --- RATE LIMITING ---
+// Tighter limit on auth endpoints (brute force / credential stuffing), looser
+// limit on the rest of the API.
+app.use("/api/auth", authLimiter);
+app.use("/api", apiLimiter);
 
 // --- BODY PARSERS ---
 app.use(express.json());
@@ -36,6 +48,11 @@ app.use((req, res, next) => {
 
 // --- COOKIE PARSER ---
 app.use(cookieParser());
+
+// --- NOSQL INJECTION GUARD ---
+// Strips `$`-operator and dotted keys from the request body so a crafted
+// payload like { "email": { "$ne": null } } can't reach a Mongoose filter.
+app.use(sanitizeBody);
 
 // --- API ROUTES ---
 app.use("/api", apiRoutes);

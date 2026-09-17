@@ -4,12 +4,9 @@ import apiClient from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
 
-const inputStyle = {
-  padding: "10px 12px",
-  fontSize: "14px",
-  borderRadius: "6px",
-  border: "1px solid #cbd5e1",
-};
+const inputClass =
+  "px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white " +
+  "focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500";
 
 const Register = () => {
   const { user, refresh } = useAuth();
@@ -46,60 +43,59 @@ const Register = () => {
   };
 
   return (
-    <div style={{ maxWidth: "360px", margin: "60px auto", padding: "0 16px" }}>
-      <h1 style={{ fontSize: "22px", marginBottom: "20px", color: "#0f172a" }}>Create an account</h1>
+    <div className="max-w-sm mx-auto px-4 mt-16">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs">
+        <h1 className="text-xl font-bold text-slate-900 mt-0 mb-5">Create an account</h1>
 
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-        <input
-          type="text"
-          placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-          style={inputStyle}
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          style={inputStyle}
-        />
-        <input
-          type="password"
-          placeholder="Password (min 6 characters)"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          minLength={6}
-          required
-          style={inputStyle}
-        />
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <input
+            type="text"
+            placeholder="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            className={inputClass}
+          />
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className={inputClass}
+          />
+          <input
+            type="password"
+            placeholder="Password (min 6 characters)"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            minLength={6}
+            required
+            className={inputClass}
+          />
 
-        {errorMsg && <span style={{ fontSize: "13px", color: "#dc2626" }}>{errorMsg}</span>}
+          {errorMsg && (
+            <span role="alert" className="text-sm text-red-600">
+              {errorMsg}
+            </span>
+          )}
 
-        <button
-          type="submit"
-          disabled={submitting}
-          style={{
-            padding: "10px",
-            fontSize: "14px",
-            fontWeight: 600,
-            color: "#fff",
-            backgroundColor: "#2563eb",
-            border: "none",
-            borderRadius: "6px",
-            cursor: submitting ? "default" : "pointer",
-            opacity: submitting ? 0.7 : 1,
-          }}
-        >
-          {submitting ? "Creating account..." : "Register"}
-        </button>
-      </form>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-60 cursor-pointer"
+          >
+            {submitting ? "Creating account..." : "Register"}
+          </button>
+        </form>
 
-      <p style={{ marginTop: "16px", fontSize: "13px", color: "#64748b" }}>
-        Already have an account? <Link to="/login">Log in</Link>
-      </p>
+        <p className="mt-4 text-sm text-slate-600">
+          Already have an account?{" "}
+          <Link to="/login" className="text-blue-600 font-medium">
+            Log in
+          </Link>
+        </p>
+      </div>
     </div>
   );
 };

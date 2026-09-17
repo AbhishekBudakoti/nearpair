@@ -1,6 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import Layout from "./pages/Layout";
+import Landing from "./pages/Landing";
+import { useAuth } from "./context/AuthContext";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
@@ -17,6 +19,13 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminActivities from "./pages/admin/AdminActivities";
 import AdminSessions from "./pages/admin/AdminSessions";
 import AdminReviews from "./pages/admin/AdminReviews";
+
+/** Signed-in visitors skip the marketing page and land straight in the app. */
+const Home = () => {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  return user ? <Navigate to="/discover" replace /> : <Landing />;
+};
 
 function App() {
   return (
@@ -46,12 +55,15 @@ function App() {
             </Route>
           </Route>
 
-          <Route path="/" element={<Navigate to="/discover" replace />} />
+          <Route path="/" element={<Home />} />
           <Route
             path="*"
             element={
-              <div style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>
-                Page not found.
+              <div className="max-w-md mx-auto text-center px-4 py-16">
+                <p className="text-sm text-slate-500 m-0">Page not found.</p>
+                <a href="/" className="text-sm text-blue-600 font-medium">
+                  Go home
+                </a>
               </div>
             }
           />
