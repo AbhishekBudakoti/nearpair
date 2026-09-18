@@ -20,7 +20,7 @@ const Register = () => {
   const [submitting, setSubmitting] = useState(false);
 
   if (user) {
-    return <Navigate to="/discover" replace />;
+    return <Navigate to="/profile" replace />;
   }
 
   const handleSubmit = async (event) => {
