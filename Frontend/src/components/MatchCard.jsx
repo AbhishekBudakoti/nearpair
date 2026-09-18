@@ -84,9 +84,13 @@ const MatchCard = ({ rank, profile, matchScore, matchQuality, matchBreakdown, di
       )}
 
       <div className="flex gap-3.5 items-start">
-        <div className="w-11 h-11 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-base shrink-0">
-          {initial}
-        </div>
+        {profile.avatar ? (
+          <img src={profile.avatar} alt="" className="w-11 h-11 rounded-full object-cover shrink-0" />
+        ) : (
+          <div className="w-11 h-11 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-base shrink-0">
+            {initial}
+          </div>
+        )}
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">

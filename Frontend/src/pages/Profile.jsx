@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import apiClient from "../api/client";
 import BlockedUsers from "../components/BlockedUsers";
+import { useAuth } from "../context/AuthContext";
+import { resizeImageToDataUrl } from "../utils/resizeImage";
 
 const DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 const SKILL_LEVELS = ["beginner", "intermediate", "advanced"];
@@ -13,10 +15,12 @@ const labelClass = "text-xs font-medium text-slate-600";
 const emptyRow = () => ({ day: "monday", startTime: "", endTime: "" });
 
 const Profile = () => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [hasProfile, setHasProfile] = useState(false);
   const [activityOptions, setActivityOptions] = useState([]);
 
+  const [avatar, setAvatar] = useState("");
   const [bio, setBio] = useState("");
   const [skillLevel, setSkillLevel] = useState("beginner");
   const [city, setCity] = useState("");
@@ -45,6 +49,7 @@ const Profile = () => {
         const profile = data.data?.profile;
         if (profile) {
           setHasProfile(true);
+          setAvatar(profile.avatar || "");
           setBio(profile.bio || "");
           setSkillLevel(profile.skillLevel || "beginner");
           setCity(profile.location?.city || "");
@@ -93,6 +98,21 @@ const Profile = () => {
     );
   };
 
+  const handleAvatarChange = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    try {
+      setAvatar(await resizeImageToDataUrl(file));
+      setErrorMsg("");
+    } catch (err) {
+      setErrorMsg(err.message || "Couldn't process that image");
+    }
+  };
+
+  const handleRemoveAvatar = () => setAvatar("");
+
   const toggleActivity = (id) => {
     setActivities((prev) => (prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]));
   };
@@ -111,6 +131,7 @@ const Profile = () => {
     setSaving(true);
 
     const payload = {
+      avatar,
       bio,
       skillLevel,
       activities,
@@ -147,6 +168,31 @@ const Profile = () => {
         </h1>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex items-center gap-4">
+            {avatar ? (
+              <img src={avatar} alt="Profile" className="w-16 h-16 rounded-full object-cover shrink-0" />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-xl shrink-0">
+                {(user?.name || "?").charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div className="flex flex-col items-start gap-1.5">
+              <label className="px-3 py-1.5 text-xs font-semibold text-slate-700 border border-slate-200 rounded-lg bg-slate-50 hover:bg-slate-100 cursor-pointer">
+                {avatar ? "Change photo" : "Add photo (optional)"}
+                <input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+              </label>
+              {avatar && (
+                <button
+                  type="button"
+                  onClick={handleRemoveAvatar}
+                  className="text-xs text-red-600 hover:text-red-700 cursor-pointer"
+                >
+                  Remove photo
+                </button>
+              )}
+            </div>
+          </div>
+
           <label className={labelClass}>
             Bio
             <textarea

@@ -32,8 +32,11 @@ app.use("/api/auth", authLimiter);
 app.use("/api", apiLimiter);
 
 // --- BODY PARSERS ---
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Raised from Express's 100kb default: profile avatars are sent inline as
+// base64 data URLs (see profile.controller.js's MAX_AVATAR_LENGTH), which can
+// approach 100kb on their own before the rest of the payload is even counted.
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
 // Express 5 leaves req.body undefined when a request carries no body, where
 // Express 4 defaulted it to {}. Controllers destructure req.body directly, so

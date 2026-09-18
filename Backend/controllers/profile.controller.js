@@ -5,11 +5,34 @@ const Activity = require('../models/activity.model')
 const {successResponse}=require('../utils/response')
 const {buildLocation}=require('../utils/geo')
 
+// Avatars are client-resized data URLs (~10-25KB typical); this caps well
+// above that so a normal photo always fits while rejecting a client that
+// skips the resize step and sends a full-size image or something else huge.
+const MAX_AVATAR_LENGTH = 300000;
+
+const validateAvatar = (avatar) => {
+    if (avatar === undefined || avatar === null || avatar === "") return;
+
+    if (typeof avatar !== "string" || !avatar.startsWith("data:image/")) {
+        const error = new Error("Avatar must be an image");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    if (avatar.length > MAX_AVATAR_LENGTH) {
+        const error = new Error("Avatar image is too large");
+        error.statusCode = 400;
+        throw error;
+    }
+};
+
 
 const createProfile = async(req,res) =>{
     const {avatar,bio,activities,skillLevel,
     availability,
     location,} = req.body;
+
+    validateAvatar(avatar);
 
     const existingProfile = await Profile.findOne({ user:req.user.id})
 
@@ -75,6 +98,8 @@ const updateMyProfile = async (req,res) =>{
     skillLevel,
     availability,
     location } = req.body;
+
+    validateAvatar(avatar);
 
     const profile=await Profile.findOne({ user:req.user.id})
 
