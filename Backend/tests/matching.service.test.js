@@ -77,6 +77,57 @@ describe("calculateMatchScore", () => {
         // Only the always-on rating weight applies -> neutral 0.5 ratio -> 100 * 0.5
         expect(score).toBe(50);
     });
+
+    describe("with an affinity map (personalization)", () => {
+        it("ignores history entirely when no affinity map is passed", () => {
+            const { breakdown } = calculateMatchScore(baseProfile(), {});
+            expect(breakdown.history).toBe(0);
+        });
+
+        it("ignores history when the affinity map is empty (first-time searcher)", () => {
+            const { breakdown } = calculateMatchScore(baseProfile(), {}, new Map());
+            expect(breakdown.history).toBe(0);
+        });
+
+        it("awards full history credit for a perfect affinity match", () => {
+            const affinityMap = new Map([[activityId, 1]]);
+            const { breakdown } = calculateMatchScore(baseProfile(), {}, affinityMap);
+            expect(breakdown.history).toBe(15);
+        });
+
+        it("scales history credit by the affinity ratio", () => {
+            const affinityMap = new Map([[activityId, 0.6]]);
+            const { breakdown } = calculateMatchScore(baseProfile(), {}, affinityMap);
+            expect(breakdown.history).toBe(9); // 15 * 0.6
+        });
+
+        it("gives 0 history credit when the candidate's activities aren't in the map", () => {
+            const affinityMap = new Map([[otherActivityId, 1]]);
+            const { breakdown } = calculateMatchScore(baseProfile(), {}, affinityMap);
+            expect(breakdown.history).toBe(0);
+        });
+
+        it("takes the best affinity across a candidate's multiple activities", () => {
+            const profile = {
+                ...baseProfile(),
+                activities: [{ _id: activityId }, { _id: otherActivityId }],
+            };
+            const affinityMap = new Map([
+                [activityId, 0.3],
+                [otherActivityId, 0.9],
+            ]);
+            const { breakdown } = calculateMatchScore(profile, {}, affinityMap);
+            expect(breakdown.history).toBe(14); // 15 * 0.9 rounded
+        });
+
+        it("dilutes other categories once history counts toward available weight", () => {
+            const affinityMap = new Map([[activityId, 1]]);
+            const profile = { ...baseProfile(), averageRating: 5 };
+            const { score } = calculateMatchScore(profile, {}, affinityMap);
+            // rating (10*1) + history (15*1) over available weight (10+15) -> 100
+            expect(score).toBe(100);
+        });
+    });
 });
 
 describe("getMatchQuality", () => {

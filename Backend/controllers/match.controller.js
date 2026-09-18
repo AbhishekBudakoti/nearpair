@@ -4,7 +4,8 @@ const Profile = require("../models/profile.model")
 const Match = require("../models/match.model")
 
 const {calculateMatchScore,
-  getMatchQuality} = require('../services/matching.service')
+  getMatchQuality,
+  buildActivityAffinityMap} = require('../services/matching.service')
 
 
 const { successResponse } = require("../utils/response");
@@ -113,8 +114,14 @@ const getMatches=async (req,res)=>{
     endTime,
     radiusKm}
 
+    // Personalization signal from the searcher's own session history — see
+    // buildActivityAffinityMap. Empty for a first-time searcher, in which
+    // case the "history" category simply doesn't count toward any score.
+    const affinityMap = await buildActivityAffinityMap(req.user.id);
+    const personalized = affinityMap.size > 0;
+
     const matches = profiles.map((profile)=>{
-      const match =calculateMatchScore(profile,criteria);
+      const match =calculateMatchScore(profile,criteria,affinityMap);
 
       const profileObj = profile.toObject ? profile.toObject() : { ...profile };
 
@@ -150,6 +157,7 @@ const getMatches=async (req,res)=>{
 
     return successResponse(res,{
       count: matches.length,
+      personalized,
       matches
     },"Partners ranked successfully")
 

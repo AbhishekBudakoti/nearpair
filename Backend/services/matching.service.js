@@ -1,3 +1,6 @@
+const Session = require("../models/session.model");
+const Review = require("../models/review.model");
+
 /**
  * Weight distribution (total 100%) for calculating user match compatibility scores.
  */
@@ -6,6 +9,7 @@ const MATCH_WEIGHT = {
   location: 20,
   availability: 25,
   skill: 15,
+  history: 15,
   rating: 10,
 };
 
@@ -48,9 +52,10 @@ const calculateTimeOverlap = (candidateStart, candidateEnd, requestedStart, requ
  *
  * @param {Object} profile - User profile document containing activities, location, availability, skill level, and rating.
  * @param {Object} criteria - Search criteria provided by requesting user.
+ * @param {Map<string, number>} [affinityMap] - Searcher's per-activity affinity ratios (0-1), from buildActivityAffinityMap. Omitted/empty for a searcher with no completed session history.
  * @returns {{score: number, breakdown: Object}} Match score percentage and category breakdown.
  */
-const calculateMatchScore = (profile, criteria) => {
+const calculateMatchScore = (profile, criteria, affinityMap) => {
   let earnedScore = 0;
   let availableWeight = 0;
 
@@ -154,7 +159,32 @@ const calculateMatchScore = (profile, criteria) => {
   }
 
   // -------------------------
-  // 5. Rating Score (10%)
+  // 5. Your History (15%)
+  // -------------------------
+  /**
+   * Personalization signal, absent for a first-time searcher: how well this
+   * candidate's activities line up with ones the searcher has actually
+   * completed (not just cancelled) and rated well in the past. `affinityMap`
+   * is built once per search by buildActivityAffinityMap, keyed by activity
+   * id -> a 0-1 ratio blending completion rate and average rating given.
+   */
+  if (affinityMap && affinityMap.size > 0) {
+    availableWeight += MATCH_WEIGHT.history;
+
+    const candidateActivityIds = (profile.activities || []).map((a) =>
+      (a._id || a).toString()
+    );
+    const bestAffinity = candidateActivityIds.reduce((best, id) => {
+      const ratio = affinityMap.get(id);
+      return ratio !== undefined && ratio > best ? ratio : best;
+    }, 0);
+
+    breakdown.history = MATCH_WEIGHT.history * bestAffinity;
+    earnedScore += breakdown.history;
+  }
+
+  // -------------------------
+  // 6. Rating Score (10%)
   // -------------------------
   availableWeight += MATCH_WEIGHT.rating;
 
@@ -177,6 +207,7 @@ const calculateMatchScore = (profile, criteria) => {
       location: Math.round(breakdown.location || 0),
       availability: Math.round(breakdown.availability || 0),
       skill: Math.round(breakdown.skill || 0),
+      history: Math.round(breakdown.history || 0),
       rating: Math.round(breakdown.rating || 0),
     },
   };
@@ -201,9 +232,84 @@ const getMatchQuality = (score) => {
   return "Low match";
 };
 
+/**
+ * Builds the searcher's personalization signal for calculateMatchScore's
+ * "Your History" category: for each activity they have a completed or
+ * cancelled session in, a 0-1 affinity ratio blending completion rate
+ * (did they actually follow through?) and the average rating they gave
+ * (did they enjoy it?). An activity they've never done has no entry —
+ * absence, not a 0, so it neither helps nor hurts a candidate's score.
+ *
+ * @param {string} userId
+ * @returns {Promise<Map<string, number>>} activityId -> affinity ratio (0-1)
+ */
+const buildActivityAffinityMap = async (userId) => {
+  const sessions = await Session.find({
+    participants: userId,
+    status: {
+      $in: [Session.SESSION_STATUSES.COMPLETED, Session.SESSION_STATUSES.CANCELLED],
+    },
+  }).select("activity status");
+
+  if (sessions.length === 0) {
+    return new Map();
+  }
+
+  const reviews = await Review.find({
+    session: { $in: sessions.map((s) => s._id) },
+    reviewer: userId,
+  }).select("session rating");
+
+  const ratingBySession = new Map(reviews.map((r) => [r.session.toString(), r.rating]));
+
+  // activityId -> { completed, cancelled, ratingSum, ratingCount }
+  const perActivity = new Map();
+
+  sessions.forEach((s) => {
+    if (!s.activity) return;
+
+    const activityId = s.activity.toString();
+    const entry = perActivity.get(activityId) || {
+      completed: 0,
+      cancelled: 0,
+      ratingSum: 0,
+      ratingCount: 0,
+    };
+
+    if (s.status === Session.SESSION_STATUSES.COMPLETED) {
+      entry.completed += 1;
+      const rating = ratingBySession.get(s._id.toString());
+      if (rating !== undefined) {
+        entry.ratingSum += rating;
+        entry.ratingCount += 1;
+      }
+    } else {
+      entry.cancelled += 1;
+    }
+
+    perActivity.set(activityId, entry);
+  });
+
+  const affinityMap = new Map();
+
+  perActivity.forEach((entry, activityId) => {
+    const total = entry.completed + entry.cancelled;
+    const completionRate = total > 0 ? entry.completed / total : 0;
+    // No review left for a completed session isn't a bad sign — treat it as
+    // mildly positive (they showed up) rather than penalizing silence to 0.
+    const ratingRatio = entry.ratingCount > 0 ? entry.ratingSum / entry.ratingCount / 5 : 0.6;
+
+    const ratio = Math.max(0, Math.min(1, 0.5 * completionRate + 0.5 * ratingRatio));
+    affinityMap.set(activityId, ratio);
+  });
+
+  return affinityMap;
+};
+
 module.exports = {
   calculateMatchScore,
   getMatchQuality,
+  buildActivityAffinityMap,
 };
 
 

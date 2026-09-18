@@ -57,6 +57,7 @@ const Discover = () => {
   const [viewMode, setViewMode] = useState("list");
 
   const [matches, setMatches] = useState(null);
+  const [personalized, setPersonalized] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [requestStatus, setRequestStatus] = useState({});
@@ -81,6 +82,7 @@ const Discover = () => {
       );
       const { data } = await apiClient.get("/matches", { params });
       setMatches(data.data?.matches || []);
+      setPersonalized(Boolean(data.data?.personalized));
       setAppliedFilters(filters);
     } catch (err) {
       setErrorMsg(err.response?.data?.message || "Failed to load matches");
@@ -130,6 +132,7 @@ const Discover = () => {
       <p className="text-sm text-slate-600 mb-5">
         Ranked by a weighted match score across activity, location,
         availability, skill level, and rating.
+        {personalized && " Also factoring in what's worked well for you before."}
       </p>
 
       <form
@@ -279,6 +282,7 @@ const Discover = () => {
               matchBreakdown={match.matchBreakdown}
               distanceKm={match.distanceKm}
               appliedFilters={appliedFilters}
+              personalized={personalized}
               requestState={requestStatus[match.profile.user._id]}
               onSendRequest={() => sendRequest(match.profile.user._id)}
               onBlocked={handleBlocked}

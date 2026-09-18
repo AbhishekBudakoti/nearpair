@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { to: "/discover", label: "Discover" },
   { to: "/requests", label: "Requests" },
   { to: "/sessions", label: "Sessions" },
+  { to: "/history", label: "History" },
   { to: "/profile", label: "Profile" },
 ];
 
