@@ -211,7 +211,7 @@ export const NotificationPanel = () => {
                 const isUnread = !notif.isRead;
                 // System notifications (warnings, report updates) have no sender.
                 const senderName =
-                  notif.sender?.name || notif.sender?.email || (notif.sender ? "Someone" : "Find a Partner");
+                  notif.sender?.name || notif.sender?.email || (notif.sender ? "Someone" : "NearPair");
 
                 return (
                   <div

@@ -154,7 +154,7 @@ const ActivityHistory = () => {
     <div className="max-w-3xl mx-auto px-4 my-6">
       <h1 className="text-2xl font-bold text-slate-900 mb-1">Activity history</h1>
       <p className="text-sm text-slate-600 mb-5">
-        Everything you've done on Find a Partner so far.
+        Everything you've done on NearPair so far.
       </p>
 
       {errorMsg && <p role="alert" className="text-sm text-red-600 mb-3">{errorMsg}</p>}

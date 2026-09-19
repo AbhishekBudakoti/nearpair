@@ -50,7 +50,7 @@ const Layout = () => {
             <Link to="/" className="flex items-center gap-1.5 no-underline min-w-0">
               <span className="text-lg shrink-0">🤝</span>
               <h1 className="m-0 text-lg sm:text-xl font-bold text-slate-900 truncate">
-                Find a Partner
+                NearPair
               </h1>
             </Link>
 

@@ -6,7 +6,7 @@ const getHealth = async (req, res) => {
     {
       environment: process.env.NODE_ENV,
     },
-    "Find a Partner API is running"
+    "NearPair API is running"
   );
 };
 

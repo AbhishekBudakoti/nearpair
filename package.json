@@ -1,4 +1,5 @@
 {
+  "name": "nearpair",
   "private": true,
   "description": "Root-level dependency for the manual test-socket.js presence smoke-test script. Real backend dependencies live in Backend/package.json.",
   "dependencies": {
