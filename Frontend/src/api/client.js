@@ -5,7 +5,7 @@ import axios from "axios";
  * Configured via VITE_API_URL so it can differ between dev/staging/prod
  * without touching source.
  */
-export const API_URL = import.meta.env.VITE_API_URL;
+export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 /**
  * Origin the backend (and its Socket.io server) is served from, derived by
@@ -27,6 +27,9 @@ export const SUSPENDED_EVENT = "auth:suspended";
 const apiClient = axios.create({
   baseURL: API_URL,
   withCredentials: true,
+  // Without a timeout an unreachable backend leaves requests pending forever,
+  // which keeps the app stuck on "Checking auth status...".
+  timeout: 10000,
 });
 
 // A suspension can land mid-session (an admin acts while the user is browsing),

@@ -1,1 +1,69 @@
 @import "tailwindcss";
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+.floating-icon {
+  animation: float 4s ease-in-out infinite;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-track {
+  width: max-content;
+  animation: marquee 22s linear infinite;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.card-in {
+  animation: card-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Opacity-only entrance for elements that already carry their own static
+   transform (e.g. a translate-based centering trick) — a transform-based
+   keyframe would fight that, since a held animation value outranks it. */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fade-in {
+  animation: fade-in 0.6s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floating-icon,
+  .marquee-track,
+  .card-in,
+  .fade-in {
+    animation: none;
+  }
+}

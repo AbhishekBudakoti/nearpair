@@ -47,11 +47,8 @@ const Layout = () => {
               </button>
             )}
 
-            <Link to="/" className="flex items-center gap-1.5 no-underline min-w-0">
-              <span className="text-lg shrink-0">🤝</span>
-              <h1 className="m-0 text-lg sm:text-xl font-bold text-slate-900 truncate">
-                NearPair
-              </h1>
+            <Link to="/" className="flex items-center no-underline min-w-0">
+              <img src="/logo.webp" alt="NearPair" className="h-8 sm:h-10 w-auto shrink-0" />
             </Link>
 
             {user && (
