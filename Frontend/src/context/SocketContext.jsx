@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import apiClient, { SOCKET_URL } from "../api/client";
+import { useAuth } from "./AuthContext";
 
 /**
  * SocketContext provides a global React context for WebSocket real-time capabilities,
@@ -16,6 +17,10 @@ const SocketContext = createContext(null);
  * @param {React.ReactNode} props.children - Child components to be wrapped by the provider.
  */
 export const SocketProvider = ({ children }) => {
+  // Only connect once we know who's logged in; `/auth/me` resolves this.
+  const { user } = useAuth();
+  const userId = user?._id;
+
   // Active Socket.io client instance
   const [socket, setSocket] = useState(null);
 
@@ -123,8 +128,17 @@ export const SocketProvider = ({ children }) => {
     }
   };
 
-  // Setup WebSocket connection and event listeners on mount
+  // Setup WebSocket connection and event listeners once a user is authenticated.
+  // Skipping this while logged out avoids a doomed handshake (the server
+  // requires the auth cookie) that otherwise fires on every page load.
   useEffect(() => {
+    if (!userId) {
+      setSocket(null);
+      setConnected(false);
+      setOnlineUsers(new Set());
+      return;
+    }
+
     // Instantiate Socket.io client
     const newSocket = io(SOCKET_URL, {
       withCredentials: true,
@@ -254,11 +268,11 @@ export const SocketProvider = ({ children }) => {
       })
     })
 
-    // Clean up socket instance on unmount
+    // Clean up socket instance on unmount, logout, or user change
     return () => {
       newSocket.disconnect();
     };
-  }, []);
+  }, [userId]);
 
   /**
    * Manually reconnects the socket client if disconnected.
