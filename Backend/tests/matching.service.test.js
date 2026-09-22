@@ -4,8 +4,7 @@ const activityId = "507f1f77bcf86cd799439011";
 const otherActivityId = "507f1f77bcf86cd799439012";
 
 const baseProfile = () => ({
-    activities: [{ _id: activityId }],
-    skillLevel: "intermediate",
+    skills: [{ activity: { _id: activityId }, level: "intermediate" }],
     availability: [{ day: "monday", startTime: "18:00", endTime: "20:00" }],
     location: { city: "Springfield" },
     averageRating: 0,
@@ -46,10 +45,42 @@ describe("calculateMatchScore", () => {
     });
 
     it("gives zero skill credit two steps away", () => {
-        const profile = { ...baseProfile(), skillLevel: "beginner" };
+        const profile = {
+            ...baseProfile(),
+            skills: [{ activity: { _id: activityId }, level: "beginner" }],
+        };
         const { breakdown } = calculateMatchScore(profile, { skillLevel: "advanced" });
 
         expect(breakdown.skill).toBe(0);
+    });
+
+    it("compares against the specific activity's level when an activity is requested", () => {
+        const profile = {
+            ...baseProfile(),
+            skills: [
+                { activity: { _id: activityId }, level: "beginner" },
+                { activity: { _id: otherActivityId }, level: "advanced" },
+            ],
+        };
+        const { breakdown } = calculateMatchScore(profile, {
+            activity: activityId,
+            skillLevel: "beginner",
+        });
+
+        expect(breakdown.skill).toBe(15);
+    });
+
+    it("uses the closest-scoring skill when no activity is requested", () => {
+        const profile = {
+            ...baseProfile(),
+            skills: [
+                { activity: { _id: activityId }, level: "beginner" },
+                { activity: { _id: otherActivityId }, level: "advanced" },
+            ],
+        };
+        const { breakdown } = calculateMatchScore(profile, { skillLevel: "advanced" });
+
+        expect(breakdown.skill).toBe(15); // "advanced" skill matches exactly
     });
 
     it("applies linear distance decay for location", () => {
@@ -110,7 +141,10 @@ describe("calculateMatchScore", () => {
         it("takes the best affinity across a candidate's multiple activities", () => {
             const profile = {
                 ...baseProfile(),
-                activities: [{ _id: activityId }, { _id: otherActivityId }],
+                skills: [
+                    { activity: { _id: activityId }, level: "intermediate" },
+                    { activity: { _id: otherActivityId }, level: "intermediate" },
+                ],
             };
             const affinityMap = new Map([
                 [activityId, 0.3],

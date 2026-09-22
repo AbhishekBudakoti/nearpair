@@ -31,16 +31,23 @@ const profileSchema = new mongoose.Schema({
         maxlength: [200, "Bio cannot exceed 200 charchters"],
         default: ""
     },
-    activities: [
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Activity"
-        }
-    ],
-    skillLevel: {
-        type: String,
-        enum: ["beginner", "intermediate", "advanced"],
-        default: "beginner"
+    skills: {
+        type: [
+            {
+                activity: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "Activity",
+                    required: true,
+                },
+                level: {
+                    type: String,
+                    enum: ["beginner", "intermediate", "advanced"],
+                    required: true,
+                    default: "beginner",
+                },
+            },
+        ],
+        default: [],
     },
 
     availability: {

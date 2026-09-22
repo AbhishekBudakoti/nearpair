@@ -20,7 +20,7 @@ describe("POST /api/auth/register", () => {
         const res = await request(app).post("/api/auth/register").send({
             name: "Alice",
             email: "alice@example.com",
-            password: "password123",
+            password: "Password123!",
         });
 
         expect(res.status).toBe(201);
@@ -29,7 +29,7 @@ describe("POST /api/auth/register", () => {
         expect(res.body.data.user.password).toBeUndefined();
 
         const stored = await User.findOne({ email: "alice@example.com" });
-        expect(stored.password).not.toBe("password123");
+        expect(stored.password).not.toBe("Password123!");
     });
 
     it("rejects a missing field with 400", async () => {
@@ -42,17 +42,28 @@ describe("POST /api/auth/register", () => {
         expect(res.body.success).toBe(false);
     });
 
+    it("rejects a weak password with 400", async () => {
+        const res = await request(app).post("/api/auth/register").send({
+            name: "Alice",
+            email: "weak-password@example.com",
+            password: "password123",
+        });
+
+        expect(res.status).toBe(400);
+        expect(res.body.success).toBe(false);
+    });
+
     it("rejects a duplicate email with 409", async () => {
         await request(app).post("/api/auth/register").send({
             name: "Alice",
             email: "dupe@example.com",
-            password: "password123",
+            password: "Password123!",
         });
 
         const res = await request(app).post("/api/auth/register").send({
             name: "Alice Again",
             email: "dupe@example.com",
-            password: "password123",
+            password: "Password123!",
         });
 
         expect(res.status).toBe(409);
@@ -70,7 +81,7 @@ describe("POST /api/auth/register", () => {
 });
 
 describe("POST /api/auth/login", () => {
-    const credentials = { name: "Bob", email: "bob@example.com", password: "password123" };
+    const credentials = { name: "Bob", email: "bob@example.com", password: "Password123!" };
 
     beforeEach(async () => {
         await request(app).post("/api/auth/register").send(credentials);
@@ -100,7 +111,7 @@ describe("POST /api/auth/login", () => {
     it("rejects an unknown email with 400", async () => {
         const res = await request(app).post("/api/auth/login").send({
             email: "nobody@example.com",
-            password: "password123",
+            password: "Password123!",
         });
 
         expect(res.status).toBe(400);
@@ -133,11 +144,11 @@ describe("GET /api/auth/me", () => {
         await agent.post("/api/auth/register").send({
             name: "Carol",
             email: "carol@example.com",
-            password: "password123",
+            password: "Password123!",
         });
         await agent.post("/api/auth/login").send({
             email: "carol@example.com",
-            password: "password123",
+            password: "Password123!",
         });
 
         const res = await agent.get("/api/auth/me");

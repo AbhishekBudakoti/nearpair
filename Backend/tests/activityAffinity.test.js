@@ -2,6 +2,7 @@ const db = require("./helpers/db");
 const { buildActivityAffinityMap } = require("../services/matching.service");
 const User = require("../models/user.model");
 const Activity = require("../models/activity.model");
+const Category = require("../models/category.model");
 const PartnerRequest = require("../models/partnerRequest.model");
 const Match = require("../models/match.model");
 const Session = require("../models/session.model");
@@ -20,6 +21,16 @@ afterAll(async () => {
 });
 
 const createUser = (email) => User.create({ name: email, email, password: "hashed-placeholder" });
+
+// Activity.category is required — one throwaway category per test, since
+// afterEach clears the database.
+let categoryId;
+beforeEach(async () => {
+    const category = await Category.create({ name: "Sports" });
+    categoryId = category._id;
+});
+
+const createActivity = (name) => Activity.create({ name, category: categoryId });
 
 const createMatch = async (userAId, userBId) => {
     const pr = await PartnerRequest.create({
@@ -42,7 +53,7 @@ describe("buildActivityAffinityMap", () => {
         const userA = await createUser("affinity.a1@example.com");
         const userB = await createUser("affinity.b1@example.com");
         const match = await createMatch(userA._id, userB._id);
-        const tennis = await Activity.create({ name: "Tennis" });
+        const tennis = await createActivity("Tennis");
 
         const session = await Session.create({
             match: match._id,
@@ -70,7 +81,7 @@ describe("buildActivityAffinityMap", () => {
         const userA = await createUser("affinity.a2@example.com");
         const userB = await createUser("affinity.b2@example.com");
         const match = await createMatch(userA._id, userB._id);
-        const chess = await Activity.create({ name: "Chess" });
+        const chess = await createActivity("Chess");
 
         await Session.create({
             match: match._id,
@@ -93,8 +104,8 @@ describe("buildActivityAffinityMap", () => {
         const userA = await createUser("affinity.a3@example.com");
         const userB = await createUser("affinity.b3@example.com");
         const match = await createMatch(userA._id, userB._id);
-        const tennis = await Activity.create({ name: "Tennis" });
-        await Activity.create({ name: "Chess" });
+        const tennis = await createActivity("Tennis");
+        await createActivity("Chess");
 
         await Session.create({
             match: match._id,
@@ -114,7 +125,7 @@ describe("buildActivityAffinityMap", () => {
         const userA = await createUser("affinity.a4@example.com");
         const userB = await createUser("affinity.b4@example.com");
         const match = await createMatch(userA._id, userB._id);
-        const tennis = await Activity.create({ name: "Tennis" });
+        const tennis = await createActivity("Tennis");
 
         const session = await Session.create({
             match: match._id,

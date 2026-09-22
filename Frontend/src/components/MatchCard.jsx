@@ -105,9 +105,11 @@ const MatchCard = ({ rank, profile, matchScore, matchQuality, matchBreakdown, di
             )}
           </div>
           <div className="text-xs text-slate-600 mt-0.5">
-            {profile.skillLevel} · {profile.location?.city || "city not set"}
+            {profile.location?.city || "city not set"}
             {dist !== undefined && dist !== null ? ` · ${dist} km away` : ""} ·{" "}
-            {(profile.activities || []).map((a) => a.name).join(", ") || "no activities listed"}
+            {(profile.skills || [])
+              .map((s) => `${s.activity?.name} (${s.level})`)
+              .join(", ") || "no skills listed"}
           </div>
           <div className="mt-1">
             <OnlineStatus userId={userId} />

@@ -23,20 +23,31 @@ export const AuthBar = () => {
 
   if (!user) {
     return (
-      <Link
-        to="/login"
-        className="px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 no-underline"
-      >
-        Log in
-      </Link>
+      <div className="flex items-center gap-2">
+        <Link
+          to="/register"
+          className="px-3 py-1.5 text-sm font-semibold text-neutral-900 border border-neutral-300 rounded-lg hover:bg-neutral-100 no-underline"
+        >
+          Sign up
+        </Link>
+        <Link
+          to="/login"
+          className="px-3 py-1.5 text-sm font-bold text-neutral-950 bg-yellow-400 rounded-lg hover:bg-yellow-300 transition-colors no-underline"
+        >
+          Log in
+        </Link>
+      </div>
     );
   }
 
   return (
     <div className="flex items-center gap-2.5">
-      <span className="hidden sm:inline text-sm font-medium text-slate-800">
+      <Link
+        to="/profile"
+        className="hidden sm:inline text-sm font-medium text-slate-800 hover:text-amber-500 hover:font-bold transition-all no-underline"
+      >
         👤 {user.name || user.email}
-      </span>
+      </Link>
       <button
         onClick={handleLogout}
         className="px-2.5 sm:px-3 py-1.5 text-sm font-semibold text-white bg-red-500 rounded-lg hover:bg-red-600 cursor-pointer whitespace-nowrap"

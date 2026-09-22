@@ -11,7 +11,7 @@ let counter = 0;
 const registerAndLogin = async (overrides = {}) => {
     counter += 1;
     const email = overrides.email || `user${counter}_${Date.now()}@example.com`;
-    const password = overrides.password || "password123";
+    const password = overrides.password || "Password123!";
     const name = overrides.name || `Test User ${counter}`;
 
     const agent = request.agent(app);

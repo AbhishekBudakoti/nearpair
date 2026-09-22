@@ -18,6 +18,12 @@ const activitySchema=new mongoose.Schema({
       default: "",
     },
 
+    category: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+      required: [true, "Category is required"],
+    },
+
     isActive: {
       type: Boolean,
       default: true,

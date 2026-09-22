@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import AuthBar from "../components/AuthBar";
+import Footer from "../components/Footer";
 import NotificationPanel from "../components/NotificationPanel";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
 
 const NAV_ITEMS = [
+  { to: "/", label: "Home" },
   { to: "/discover", label: "Discover" },
   { to: "/requests", label: "Requests" },
   { to: "/sessions", label: "Sessions" },
@@ -14,13 +16,17 @@ const NAV_ITEMS = [
 ];
 
 const navLinkClass = ({ isActive }) =>
-  `text-sm font-medium transition-colors ${
-    isActive ? "text-blue-600 font-semibold" : "text-slate-600 hover:text-slate-900"
+  `text-sm transition-all duration-150 py-1.5 px-3 rounded-lg ${
+    isActive
+      ? "text-yellow-600 font-bold bg-yellow-50/80 border-b-2 border-yellow-400"
+      : "text-slate-700 font-medium hover:text-amber-500 hover:font-bold hover:bg-yellow-50/50"
   }`;
 
 const mobileNavLinkClass = ({ isActive }) =>
-  `block px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-    isActive ? "bg-blue-50 text-blue-600 font-semibold" : "text-slate-600 hover:bg-slate-50"
+  `block px-3 py-2 rounded-lg text-sm transition-all ${
+    isActive
+      ? "bg-yellow-100 text-yellow-800 font-bold"
+      : "text-slate-700 font-medium hover:bg-yellow-50 hover:text-amber-500 hover:font-bold"
   }`;
 
 const Layout = () => {
@@ -31,10 +37,11 @@ const Layout = () => {
   const navItems = user?.role === "admin" ? [...NAV_ITEMS, { to: "/admin", label: "Admin" }] : NAV_ITEMS;
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200 shadow-xs">
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3 gap-3">
-          <div className="flex items-center gap-5 min-w-0">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      <header className="bg-white border-b border-slate-200 shadow-xs sticky top-0 z-50">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 gap-4">
+          {/* Left section: Mobile menu toggle + Logo */}
+          <div className="flex items-center gap-3 shrink-0">
             {user && (
               <button
                 type="button"
@@ -47,28 +54,32 @@ const Layout = () => {
               </button>
             )}
 
-            <Link to="/" className="flex items-center no-underline min-w-0">
-              <img src="/logo.webp" alt="NearPair" className="h-8 sm:h-10 w-auto shrink-0" />
+            <Link to="/" className="flex items-center no-underline shrink-0">
+              <img src="/logo.webp" alt="NearPair" className="h-10 sm:h-12 w-auto shrink-0 hover:opacity-90 transition-opacity" />
             </Link>
-
-            {user && (
-              <nav className="hidden sm:flex items-center gap-4">
-                {navItems.map((item) => (
-                  <NavLink key={item.to} to={item.to} className={navLinkClass}>
-                    {item.label}
-                  </NavLink>
-                ))}
-                {/* Live-connection indicator — a dot rather than a persistent
-                    "Disconnected" banner, since brief drops during navigation
-                    are normal and shouldn't read as an error state. */}
-                <span
-                  title={connected ? "Live updates connected" : "Live updates reconnecting..."}
-                  className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-emerald-500" : "bg-slate-300"}`}
-                />
-              </nav>
-            )}
           </div>
 
+          {/* Center section: Navbar links in the middle */}
+          {user && (
+            <nav className="hidden sm:flex items-center justify-center gap-1 sm:gap-2 flex-1 mx-2">
+              {navItems.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.to === "/"}
+                  className={navLinkClass}
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+              <span
+                title={connected ? "Live updates connected" : "Live updates reconnecting..."}
+                className={`w-2 h-2 rounded-full ml-1 shrink-0 ${connected ? "bg-emerald-500" : "bg-slate-300"}`}
+              />
+            </nav>
+          )}
+
+          {/* Right section: Auth & Notifications */}
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <AuthBar />
             {user && <NotificationPanel />}
@@ -81,6 +92,7 @@ const Layout = () => {
               <NavLink
                 key={item.to}
                 to={item.to}
+                end={item.to === "/"}
                 className={mobileNavLinkClass}
                 onClick={() => setMenuOpen(false)}
               >
@@ -91,9 +103,11 @@ const Layout = () => {
         )}
       </header>
 
-      <main className="pb-10">
+      <main className="pb-10 flex-1">
         <Outlet />
       </main>
+
+      <Footer />
     </div>
   );
 };

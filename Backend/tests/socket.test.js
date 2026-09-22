@@ -38,8 +38,8 @@ const registerAndGetCookie = async (email) => {
     const agent = request.agent(app);
     await agent
         .post("/api/auth/register")
-        .send({ name: "Socket User", email, password: "password123" });
-    const res = await agent.post("/api/auth/login").send({ email, password: "password123" });
+        .send({ name: "Socket User", email, password: "Password123!" });
+    const res = await agent.post("/api/auth/login").send({ email, password: "Password123!" });
     const cookie = res.headers["set-cookie"][0].split(";")[0];
     return { cookie, user: res.body.data.user };
 };

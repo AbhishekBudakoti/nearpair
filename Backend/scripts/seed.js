@@ -5,6 +5,57 @@ require('dotenv').config();
 const User = require('../models/user.model');
 const Profile = require('../models/profile.model');
 const Activity = require('../models/activity.model');
+const Category = require('../models/category.model');
+
+// Full activity taxonomy: 7 categories, each with its subcategories
+// (activities). "Indoor" was intentionally dropped from the original list —
+// every item in it (Chess, Carrom, Gaming, Cooking, Movie, Yoga, ...) was
+// already listed under another category, so it would only have produced
+// duplicate activity names. Each activity lives under exactly one category.
+const CATEGORY_TAXONOMY = [
+    {
+        name: 'Sports', emoji: '🏏', activities: [
+            'Cricket', 'Football', 'Basketball', 'Badminton', 'Tennis',
+            'Table Tennis', 'Volleyball', 'Swimming', 'Boxing', 'Skating',
+        ],
+    },
+    {
+        name: 'Fitness', emoji: '🏋️', activities: [
+            'Gym', 'Running', 'Walking', 'Jogging', 'Yoga', 'Cycling',
+            'Hiking', 'Martial Arts',
+        ],
+    },
+    {
+        name: 'Games', emoji: '🎮', activities: [
+            'Gaming', 'Chess', 'Carrom', 'Board Games', 'Card Games',
+            'Bowling', 'Pool', 'Esports',
+        ],
+    },
+    {
+        name: 'Creative', emoji: '🎨', activities: [
+            'Photography', 'Drawing', 'Painting', 'Dancing', 'Singing',
+            'Guitar', 'Music', 'Writing', 'Cooking',
+        ],
+    },
+    {
+        name: 'Learning', emoji: '📚', activities: [
+            'Coding', 'Language Learning', 'Reading', 'Book Club',
+            'Public Speaking', 'Study Together', 'Skill Sharing',
+        ],
+    },
+    {
+        name: 'Outdoor', emoji: '🌳', activities: [
+            'Camping', 'Road Trips', 'Picnics', 'Trekking', 'Nature Walk',
+            'Exploring', 'Travel',
+        ],
+    },
+    {
+        name: 'Social', emoji: '🤝', activities: [
+            'Coffee Meetup', 'Movie', 'Shopping', 'Food Meetup',
+            'Networking', 'Volunteering', 'Conversation', 'City Exploring',
+        ],
+    },
+];
 
 async function seed() {
     try {
@@ -12,59 +63,76 @@ async function seed() {
         await mongoose.connect(mongoUrl);
         console.log('Connected to MongoDB for seeding...');
 
-        // 1. Seed Activities
-        const activityList = ["Tennis", "Running", "Cycling", "Badminton", "Chess", "Swimming"];
+        // 1. Seed Categories, then Activities (each linked to its category)
         const activityDocs = {};
 
-        for (const name of activityList) {
-            let act = await Activity.findOne({ name });
-            if (!act) {
-                act = await Activity.create({ name, description: `${name} activity` });
+        for (let i = 0; i < CATEGORY_TAXONOMY.length; i += 1) {
+            const { name: categoryName, emoji, activities } = CATEGORY_TAXONOMY[i];
+
+            let category = await Category.findOne({ name: categoryName });
+            if (!category) {
+                category = await Category.create({ name: categoryName, emoji, order: i });
+            } else if (category.emoji !== emoji || category.order !== i) {
+                category.emoji = emoji;
+                category.order = i;
+                await category.save();
             }
-            activityDocs[name] = act._id;
+
+            for (const name of activities) {
+                let act = await Activity.findOne({ name: new RegExp(`^${name}$`, 'i') });
+                if (!act) {
+                    act = await Activity.create({ name, description: `${name} activity`, category: category._id });
+                } else if (!act.category) {
+                    act.category = category._id;
+                    await act.save();
+                }
+                activityDocs[name] = act._id;
+            }
         }
-        console.log('Activities seeded.');
+        console.log('Categories and activities seeded.');
+
+        const toSkills = (activityIds, level) => activityIds.map((activity) => ({ activity, level }));
 
         const defaultPassword = 'Test@12345';
         const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
-        // 2. Main Test User (Abhishek)
-        const testEmail = 'abhishek.socket2026@gmail.com';
-        let mainUser = await User.findOne({ email: testEmail });
-        if (!mainUser) {
-            mainUser = await User.create({
-                name: 'Abhishek',
-                email: testEmail,
-                password: hashedPassword,
-                role: 'user',
-                isVerified: true
-            });
-            console.log(`Created main test user: ${testEmail}`);
-        } else {
-            mainUser.password = hashedPassword;
-            await mainUser.save();
-        }
+        // 2. Main Test Users (Abhishek)
+        const testEmails = ['abhishek.socket2026@gmail.com', 'abhishek.budakoti.04@gmail.com'];
+        for (const testEmail of testEmails) {
+            let mainUser = await User.findOne({ email: testEmail });
+            if (!mainUser) {
+                mainUser = await User.create({
+                    name: 'Abhishek Budakoti',
+                    email: testEmail,
+                    password: hashedPassword,
+                    role: 'user',
+                    isVerified: true
+                });
+                console.log(`Created test user: ${testEmail}`);
+            } else {
+                mainUser.password = hashedPassword;
+                await mainUser.save();
+            }
 
-        let mainProfile = await Profile.findOne({ user: mainUser._id });
-        if (!mainProfile) {
-            await Profile.create({
-                user: mainUser._id,
-                bio: "Passionate about sports & outdoor activities!",
-                skillLevel: "intermediate",
-                activities: [activityDocs["Tennis"], activityDocs["Running"]],
-                location: {
+            let mainProfile = await Profile.findOne({ user: mainUser._id });
+            if (!mainProfile) {
+                await Profile.create({
+                    user: mainUser._id,
+                    bio: "Passionate about sports & outdoor activities!",
+                    skills: toSkills([activityDocs["Tennis"], activityDocs["Running"]], "intermediate"),
+                    location: {
+                        city: "Dehradun",
+                        point: { type: "Point", coordinates: [78.0322, 30.3165] }
+                    }
+                });
+                console.log(`Created profile for ${testEmail}`);
+            } else {
+                mainProfile.location = {
                     city: "Dehradun",
                     point: { type: "Point", coordinates: [78.0322, 30.3165] }
-                }
-            });
-            console.log('Created profile for main test user.');
-        } else {
-            mainProfile.location = {
-                city: "Dehradun",
-                point: { type: "Point", coordinates: [78.0322, 30.3165] }
-            };
-            await mainProfile.save();
-            console.log('Updated profile for main test user with coordinates.');
+                };
+                await mainProfile.save();
+            }
         }
 
         // 2b. Admin user for the moderation dashboard (/admin/reports).
@@ -92,8 +160,7 @@ async function seed() {
                 name: "Aarav Sharma",
                 email: "aarav@example.com",
                 bio: "Tennis enthusiast looking for weekly matches",
-                skillLevel: "intermediate",
-                activities: [activityDocs["Tennis"], activityDocs["Running"]],
+                skills: toSkills([activityDocs["Tennis"], activityDocs["Running"]], "intermediate"),
                 location: {
                     city: "Dehradun",
                     point: { type: "Point", coordinates: [78.0432, 30.3275] } // ~1.7 km
@@ -104,8 +171,7 @@ async function seed() {
                 name: "Priya Patel",
                 email: "priya@example.com",
                 bio: "Beginner badminton & cycling partner wanted",
-                skillLevel: "beginner",
-                activities: [activityDocs["Badminton"], activityDocs["Cycling"]],
+                skills: toSkills([activityDocs["Badminton"], activityDocs["Cycling"]], "beginner"),
                 location: {
                     city: "Dehradun",
                     point: { type: "Point", coordinates: [78.0550, 30.3400] } // ~3.6 km
@@ -116,8 +182,7 @@ async function seed() {
                 name: "Rohan Verma",
                 email: "rohan@example.com",
                 bio: "Competitive tennis and chess player",
-                skillLevel: "advanced",
-                activities: [activityDocs["Tennis"], activityDocs["Chess"]],
+                skills: toSkills([activityDocs["Tennis"], activityDocs["Chess"]], "advanced"),
                 location: {
                     city: "Dehradun",
                     point: { type: "Point", coordinates: [78.0900, 30.3700] } // ~8.5 km
@@ -128,8 +193,7 @@ async function seed() {
                 name: "Sneha Kapoor",
                 email: "sneha@example.com",
                 bio: "Trail runner and swimmer",
-                skillLevel: "intermediate",
-                activities: [activityDocs["Running"], activityDocs["Swimming"]],
+                skills: toSkills([activityDocs["Running"], activityDocs["Swimming"]], "intermediate"),
                 location: {
                     city: "Mussoorie",
                     point: { type: "Point", coordinates: [78.1700, 30.4500] } // ~20 km
@@ -140,8 +204,7 @@ async function seed() {
                 name: "Vikram Singh",
                 email: "vikram@example.com",
                 bio: "Advanced badminton player",
-                skillLevel: "advanced",
-                activities: [activityDocs["Badminton"], activityDocs["Tennis"]],
+                skills: toSkills([activityDocs["Badminton"], activityDocs["Tennis"]], "advanced"),
                 location: {
                     city: "Rishikesh",
                     point: { type: "Point", coordinates: [78.3000, 30.5800] } // ~40 km
@@ -152,8 +215,7 @@ async function seed() {
                 name: "Ananya Gupta",
                 email: "ananya@example.com",
                 bio: "Weekend cyclist & chess hobbyist",
-                skillLevel: "beginner",
-                activities: [activityDocs["Cycling"], activityDocs["Chess"]],
+                skills: toSkills([activityDocs["Cycling"], activityDocs["Chess"]], "beginner"),
                 location: {
                     city: "Haridwar",
                     point: { type: "Point", coordinates: [78.5000, 30.8000] } // ~70 km
@@ -164,8 +226,7 @@ async function seed() {
                 name: "Dev Kumar",
                 email: "dev@example.com",
                 bio: "Digital nomad - no fixed location point set",
-                skillLevel: "intermediate",
-                activities: [activityDocs["Tennis"], activityDocs["Swimming"]],
+                skills: toSkills([activityDocs["Tennis"], activityDocs["Swimming"]], "intermediate"),
                 location: {
                     city: "Remote Nomad"
                     // Intentionally NO point coordinates!
@@ -191,16 +252,14 @@ async function seed() {
                 await Profile.create({
                     user: u._id,
                     bio: candidate.bio,
-                    skillLevel: candidate.skillLevel,
-                    activities: candidate.activities,
+                    skills: candidate.skills,
                     location: candidate.location,
                     averageRating: candidate.averageRating,
                 });
                 console.log(`Created profile for ${candidate.name} (${candidate.email})`);
             } else {
                 p.location = candidate.location;
-                p.activities = candidate.activities;
-                p.skillLevel = candidate.skillLevel;
+                p.skills = candidate.skills;
                 p.averageRating = candidate.averageRating;
                 await p.save();
                 console.log(`Updated profile for ${candidate.name}`);

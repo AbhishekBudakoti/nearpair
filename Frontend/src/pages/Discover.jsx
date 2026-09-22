@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import apiClient from "../api/client";
 import MatchCard from "../components/MatchCard";
 import PartnersMap from "../components/PartnersMap";
@@ -47,43 +47,82 @@ const MatchCardSkeleton = () => (
   </div>
 );
 
+const KNOWN_CITIES = [
+  "Gurugram",
+  "Gurgaon",
+  "Guwahati",
+  "Gwalior",
+  "Gujarat",
+  "Delhi",
+  "New Delhi",
+  "Noida",
+  "Greater Noida",
+  "Ghaziabad",
+  "Faridabad",
+  "Mumbai",
+  "Bengaluru",
+  "Bangalore",
+  "Hyderabad",
+  "Chennai",
+  "Kolkata",
+  "Pune",
+  "Ahmedabad",
+  "Jaipur",
+  "Chandigarh",
+  "Goa",
+  "Surat",
+  "Lucknow",
+  "Kanpur",
+  "Patna",
+  "Indore",
+  "Bhopal",
+  "Nagpur",
+  "Dehradun",
+  "Rishikesh",
+  "London",
+  "New York",
+  "San Francisco",
+  "Dubai",
+  "Toronto",
+  "Singapore",
+];
+
 const Discover = () => {
   const [activityOptions, setActivityOptions] = useState([]);
+  const [categoryOptions, setCategoryOptions] = useState([]);
   const [filters, setFilters] = useState(emptyFilters);
-  // The filters an in-flight/last search actually ran with — MatchCard needs
-  // this (not the live `filters` state) to know which breakdown categories
-  // the backend scored vs. left out.
   const [appliedFilters, setAppliedFilters] = useState(emptyFilters);
   const [viewMode, setViewMode] = useState("list");
 
   const [matches, setMatches] = useState(null);
   const [personalized, setPersonalized] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [userProfileCity, setUserProfileCity] = useState("");
   const [requestStatus, setRequestStatus] = useState({});
 
-  useEffect(() => {
-    apiClient
-      .get("/activities")
-      .then(({ data }) => setActivityOptions(data.data?.activities || []))
-      .catch(() => {});
-  }, []);
+  const [availableCities, setAvailableCities] = useState(KNOWN_CITIES);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const cityWrapperRef = useRef(null);
 
   const setFilter = (field, value) =>
     setFilters((prev) => ({ ...prev, [field]: value }));
 
-  const runSearch = async (event) => {
+  const runSearch = async (event, customFilters) => {
     event?.preventDefault();
+    setShowSuggestions(false);
     setLoading(true);
     setErrorMsg("");
+    const activeFilters = customFilters || filters;
     try {
       const params = Object.fromEntries(
-        Object.entries(filters).filter(([, v]) => v),
+        Object.entries(activeFilters).filter(([, v]) => v),
       );
       const { data } = await apiClient.get("/matches", { params });
       setMatches(data.data?.matches || []);
       setPersonalized(Boolean(data.data?.personalized));
-      setAppliedFilters(filters);
+      setAppliedFilters(activeFilters);
     } catch (err) {
       setErrorMsg(err.response?.data?.message || "Failed to load matches");
       setMatches([]);
@@ -92,11 +131,116 @@ const Discover = () => {
     }
   };
 
-  // Run an unfiltered search on first load so the page isn't empty.
+  // Close city suggestions dropdown on outside click
   useEffect(() => {
-    runSearch();
+    const handleClickOutside = (event) => {
+      if (cityWrapperRef.current && !cityWrapperRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    apiClient
+      .get("/activities")
+      .then(({ data }) => setActivityOptions(data.data?.activities || []))
+      .catch(() => {});
+    apiClient
+      .get("/categories")
+      .then(({ data }) => setCategoryOptions(data.data?.categories || []))
+      .catch(() => {});
+
+    // Fetch database cities & combine with known cities list
+    apiClient
+      .get("/profile/cities")
+      .then(({ data }) => {
+        const dbCities = data.data?.cities || [];
+        const combined = Array.from(new Set([...dbCities, ...KNOWN_CITIES])).sort();
+        setAvailableCities(combined);
+      })
+      .catch(() => {});
+
+    // Load profile to auto-fill user's city if available
+    apiClient
+      .get("/profile/me")
+      .then(({ data }) => {
+        const city = data.data?.profile?.location?.city || "";
+        if (city) {
+          setUserProfileCity(city);
+          setFilters((prev) => {
+            const updated = { ...prev, city };
+            runSearch(null, updated);
+            return updated;
+          });
+        } else {
+          runSearch();
+        }
+      })
+      .catch(() => {
+        runSearch();
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleDetectLocation = () => {
+    if (!navigator.geolocation) {
+      setErrorMsg("Geolocation is not supported by your browser");
+      return;
+    }
+    setLocating(true);
+    setErrorMsg("");
+    setShowSuggestions(false);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`
+          );
+          if (res.ok) {
+            const data = await res.json();
+            const guessedCity =
+              data.address?.city ||
+              data.address?.town ||
+              data.address?.village ||
+              data.address?.county ||
+              "";
+            if (guessedCity) {
+              const updated = { ...filters, city: guessedCity };
+              setFilters(updated);
+              runSearch(null, updated);
+            } else {
+              setErrorMsg("Couldn't determine city from location");
+            }
+          }
+        } catch {
+          setErrorMsg("Could not fetch location details");
+        } finally {
+          setLocating(false);
+        }
+      },
+      (err) => {
+        setErrorMsg(err.code === 1 ? "Location permission denied" : "Couldn't detect location");
+        setLocating(false);
+      },
+      { timeout: 10000, maximumAge: 300000 }
+    );
+  };
+
+  const selectCityChip = (cityName) => {
+    const updated = { ...filters, city: cityName };
+    setFilters(updated);
+    setShowSuggestions(false);
+    runSearch(null, updated);
+  };
+
+  const citySuggestions = useMemo(() => {
+    const query = filters.city.trim().toLowerCase();
+    if (!query) return [];
+    return availableCities.filter((c) => c.toLowerCase().includes(query)).slice(0, 8);
+  }, [filters.city, availableCities]);
 
   const sendRequest = async (recipientId) => {
     setRequestStatus((prev) => ({ ...prev, [recipientId]: "sending" }));
@@ -126,6 +270,13 @@ const Discover = () => {
 
   const hasActiveFilters = Object.values(filters).some(Boolean);
 
+  const activitiesByCategory = categoryOptions
+    .map((category) => ({
+      ...category,
+      activities: activityOptions.filter((a) => (a.category?._id || a.category) === category._id),
+    }))
+    .filter((category) => category.activities.length > 0);
+
   return (
     <div className="max-w-5xl mx-auto px-4 my-6">
       <h1 className="text-2xl font-bold text-slate-900 mb-1">Discover partners</h1>
@@ -145,20 +296,63 @@ const Discover = () => {
           className={inputClass}
         >
           <option value="">Any activity</option>
-          {activityOptions.map((a) => (
-            <option key={a._id} value={a._id}>
-              {a.name}
-            </option>
+          {activitiesByCategory.map((category) => (
+            <optgroup key={category._id} label={`${category.emoji} ${category.name}`}>
+              {category.activities.map((a) => (
+                <option key={a._id} value={a._id}>
+                  {a.name}
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
 
-        <input
-          type="text"
-          placeholder="City"
-          value={filters.city}
-          onChange={(e) => setFilter("city", e.target.value)}
-          className={`${inputClass} w-28`}
-        />
+        <div className="relative" ref={cityWrapperRef}>
+          <div className="flex items-center gap-1.5">
+            <input
+              type="text"
+              placeholder="City (e.g. Gurugram)"
+              value={filters.city}
+              onFocus={() => setShowSuggestions(true)}
+              onChange={(e) => {
+                setFilter("city", e.target.value);
+                setShowSuggestions(true);
+              }}
+              className={`${inputClass} w-36 sm:w-44`}
+            />
+            <button
+              type="button"
+              onClick={handleDetectLocation}
+              disabled={locating}
+              title="Detect my current location"
+              className="px-2 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-yellow-100 hover:text-yellow-900 rounded-lg border border-slate-300 transition-colors flex items-center gap-1 shrink-0 cursor-pointer disabled:opacity-50"
+            >
+              {locating ? "📍..." : "📍 Auto"}
+            </button>
+          </div>
+
+          {/* Autocomplete Suggestions Dropdown */}
+          {showSuggestions && citySuggestions.length > 0 && (
+            <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in duration-100">
+              <div className="px-3 py-1.5 bg-slate-50 border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                Matching Cities ({citySuggestions.length})
+              </div>
+              <div className="max-h-56 overflow-y-auto">
+                {citySuggestions.map((cityName) => (
+                  <button
+                    key={cityName}
+                    type="button"
+                    onClick={() => selectCityChip(cityName)}
+                    className="w-full text-left px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-yellow-50 hover:text-yellow-950 hover:font-semibold cursor-pointer flex items-center justify-between border-b border-slate-100/70 last:border-0 transition-colors"
+                  >
+                    <span>📍 {cityName}</span>
+                    <span className="text-xs text-slate-400 font-normal">Select</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         <select
           value={filters.radiusKm}

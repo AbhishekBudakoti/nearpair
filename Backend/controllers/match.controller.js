@@ -77,7 +77,7 @@ const getMatches=async (req,res)=>{
       };
 
       if (activity) {
-        filter.activities = new mongoose.Types.ObjectId(activity);
+        filter["skills.activity"] = new mongoose.Types.ObjectId(activity);
       }
 
       const results = await Profile.aggregate([
@@ -94,18 +94,18 @@ const getMatches=async (req,res)=>{
 
       profiles = await Profile.populate(results, [
         { path: "user", select: "name email" },
-        { path: "activities", select: "name" },
+        { path: "skills.activity", select: "name" },
       ]);
     } else {
       const filter = { user: { $nin: [req.user.id, ...hiddenUserIds] } };
 
       if (activity) {
-        filter.activities = activity;
+        filter["skills.activity"] = activity;
       }
 
       profiles = await Profile.find(filter)
         .populate("user", "name email")
-        .populate("activities", "name");
+        .populate("skills.activity", "name");
     }
 
     const criteria={activity,city,  skillLevel,

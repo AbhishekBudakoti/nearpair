@@ -77,8 +77,8 @@ const PartnersMap = ({ matches = [] }) => {
                 <div className="p-1 font-sans text-xs">
                   <div className="font-bold text-sm text-slate-900">{name}</div>
                   <div className="text-slate-600 mt-0.5">
-                    {match.profile.skillLevel && (
-                      <span className="capitalize">{match.profile.skillLevel} · </span>
+                    {match.profile.skills?.[0] && (
+                      <span className="capitalize">{match.profile.skills[0].level} · </span>
                     )}
                     {match.profile.location?.city || "Unknown city"}
                   </div>

@@ -1,14 +1,29 @@
+const mongoose = require("mongoose")
+
 const Activity = require("../models/activity.model")
+const Category = require("../models/category.model")
 
 const { successResponse } = require("../utils/response")
 
 
 const createActivity = async (req, res) => {
-    console.log('createActivity called', { body: req.body, user: req.user });
-    const { name, description } = req.body;
+    const { name, description, category } = req.body;
 
     if (!name) {
         const error = new Error("Activity name is required");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    if (!category || !mongoose.Types.ObjectId.isValid(category)) {
+        const error = new Error("A valid category is required");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const categoryExists = await Category.exists({ _id: category });
+    if (!categoryExists) {
+        const error = new Error("Category not found");
         error.statusCode = 400;
         throw error;
     }
@@ -24,10 +39,10 @@ const createActivity = async (req, res) => {
     const activity = await Activity.create({
         name: name.trim(),
         description,
+        category,
     })
 
-    console.log('activity created', activity)
-
+    await activity.populate("category", "name emoji");
 
     return successResponse(
         res, { activity }, "Activity created successfully"
@@ -39,7 +54,9 @@ const createActivity = async (req, res) => {
 const getActivity = async (req, res) => {
     const activities = await Activity.find({
         isActive: true
-    }).sort({ name: 1 })
+    })
+        .populate("category", "name emoji")
+        .sort({ name: 1 })
 
     return successResponse(
         res, { activities }, "Activities fetched successfully"

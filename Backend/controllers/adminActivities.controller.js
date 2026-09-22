@@ -17,11 +17,11 @@ const httpError = (message, statusCode) => {
  * @access  Admin
  */
 const getActivities = async (req, res) => {
-  const activities = await Activity.find().sort({ name: 1 }).lean();
+  const activities = await Activity.find().populate("category", "name emoji").sort({ name: 1 }).lean();
 
   const usage = await Profile.aggregate([
-    { $unwind: "$activities" },
-    { $group: { _id: "$activities", count: { $sum: 1 } } },
+    { $unwind: "$skills" },
+    { $group: { _id: "$skills.activity", count: { $sum: 1 } } },
   ]);
   const usageMap = new Map(usage.map((u) => [u._id.toString(), u.count]));
 

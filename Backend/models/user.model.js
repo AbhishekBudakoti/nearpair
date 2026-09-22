@@ -18,8 +18,34 @@ const userSchema=new mongoose.Schema({
     },
     password:{
         type:String,
-        required:[true,"Password is required"],
+        // Not required for a Google-only account (no password ever set).
+        required:[function(){ return !this.googleId; },"Password is required"],
         minlength:[6,"Password must at least 6 characters"]
+    },
+    // No default: a sparse unique index only excludes documents where the
+    // field is truly absent, not ones explicitly set to null — so a
+    // password-only user must simply never have this key at all.
+    googleId:{
+        type:String,
+        unique:true,
+        sparse:true
+    },
+    gender:{
+        type:String,
+        enum:["male","female","other","prefer_not_to_say"]
+    },
+    dateOfBirth:{
+        type:Date
+    },
+    phone:{
+        type:String,
+        trim:true,
+        default:""
+    },
+    referralCode:{
+        type:String,
+        trim:true,
+        default:""
     },
     role:{
         type:String,

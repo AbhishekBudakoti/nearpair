@@ -6,6 +6,7 @@ const PartnerRequest = require("../models/partnerRequest.model");
 const Match = require("../models/match.model");
 const Session = require("../models/session.model");
 const Activity = require("../models/activity.model");
+const Category = require("../models/category.model");
 const Review = require("../models/review.model");
 
 beforeAll(async () => {
@@ -66,7 +67,8 @@ describe("GET /api/sessions/history", () => {
         const { user: userB } = await registerAndLogin();
 
         const match = await createActiveMatch(userA.id, userB.id);
-        const activity = await Activity.create({ name: "Tennis" });
+        const category = await Category.create({ name: "Sports" });
+        const activity = await Activity.create({ name: "Tennis", category: category._id });
 
         const completedSession = await Session.create({
             match: match._id,

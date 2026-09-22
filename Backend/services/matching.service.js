@@ -50,7 +50,7 @@ const calculateTimeOverlap = (candidateStart, candidateEnd, requestedStart, requ
 /**
  * Calculates weighted match score (0-100) and breakdown for a user profile based on search criteria.
  *
- * @param {Object} profile - User profile document containing activities, location, availability, skill level, and rating.
+ * @param {Object} profile - User profile document containing skills (activity + level pairs), location, availability, and rating.
  * @param {Object} criteria - Search criteria provided by requesting user.
  * @param {Map<string, number>} [affinityMap] - Searcher's per-activity affinity ratios (0-1), from buildActivityAffinityMap. Omitted/empty for a searcher with no completed session history.
  * @returns {{score: number, breakdown: Object}} Match score percentage and category breakdown.
@@ -67,8 +67,8 @@ const calculateMatchScore = (profile, criteria, affinityMap) => {
   if (criteria.activity) {
     availableWeight += MATCH_WEIGHT.activity;
 
-    const activityMatch = profile.activities.some((activity) => {
-      return activity._id.toString() == criteria.activity;
+    const activityMatch = profile.skills.some((skill) => {
+      return skill.activity._id.toString() == criteria.activity;
     });
     breakdown.activity = activityMatch ? MATCH_WEIGHT.activity : 0;
     earnedScore += breakdown.activity;
@@ -107,7 +107,11 @@ const calculateMatchScore = (profile, criteria, affinityMap) => {
     availableWeight += MATCH_WEIGHT.location;
 
     const candidateCity = profile.location?.city?.trim().toLowerCase();
-    const locationMatch = candidateCity && candidateCity === criteria.city.trim().toLowerCase();
+    const searchCity = criteria.city.trim().toLowerCase();
+    const locationMatch =
+      candidateCity &&
+      searchCity &&
+      (candidateCity === searchCity || candidateCity.includes(searchCity) || searchCity.includes(candidateCity));
 
     breakdown.location = locationMatch ? MATCH_WEIGHT.location : 0;
     earnedScore += breakdown.location;
@@ -141,13 +145,36 @@ const calculateMatchScore = (profile, criteria, affinityMap) => {
   // -------------------------
   // 4. Skill Level Match (15%)
   // -------------------------
+  /**
+   * When a specific activity was requested, compare against the candidate's
+   * level for *that* activity. Otherwise (skill level filter with no
+   * activity chosen) give the candidate the benefit of their closest-scoring
+   * skill across everything they do.
+   */
   if (criteria.skillLevel) {
     availableWeight += MATCH_WEIGHT.skill;
 
-    const candidateSkill = SKILL_LEVELS[profile.skillLevel];
     const requestedSkill = SKILL_LEVELS[criteria.skillLevel];
 
-    if (candidateSkill === requestedSkill) {
+    let candidateSkill;
+    if (criteria.activity) {
+      const matchingSkill = profile.skills.find(
+        (skill) => skill.activity._id.toString() == criteria.activity
+      );
+      candidateSkill = matchingSkill ? SKILL_LEVELS[matchingSkill.level] : undefined;
+    } else {
+      candidateSkill = profile.skills.reduce((best, skill) => {
+        const level = SKILL_LEVELS[skill.level];
+        if (best === undefined || Math.abs(level - requestedSkill) < Math.abs(best - requestedSkill)) {
+          return level;
+        }
+        return best;
+      }, undefined);
+    }
+
+    if (candidateSkill === undefined) {
+      breakdown.skill = 0;
+    } else if (candidateSkill === requestedSkill) {
       breakdown.skill = MATCH_WEIGHT.skill;
     } else if (Math.abs(candidateSkill - requestedSkill) === 1) {
       breakdown.skill = MATCH_WEIGHT.skill * 0.5;
@@ -171,8 +198,8 @@ const calculateMatchScore = (profile, criteria, affinityMap) => {
   if (affinityMap && affinityMap.size > 0) {
     availableWeight += MATCH_WEIGHT.history;
 
-    const candidateActivityIds = (profile.activities || []).map((a) =>
-      (a._id || a).toString()
+    const candidateActivityIds = (profile.skills || []).map((s) =>
+      (s.activity._id || s.activity).toString()
     );
     const bestAffinity = candidateActivityIds.reduce((best, id) => {
       const ratio = affinityMap.get(id);

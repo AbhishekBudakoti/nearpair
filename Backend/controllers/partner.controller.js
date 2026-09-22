@@ -29,8 +29,6 @@ const searchPartners = async (req, res) => {
       error.statusCode = 400;
       throw error;
     }
-
-    filter.activities = activity;
   }
 
   // Filter by skill level
@@ -46,8 +44,18 @@ const searchPartners = async (req, res) => {
       error.statusCode = 400;
       throw error;
     }
+  }
 
-    filter.skillLevel = skillLevel;
+  // Both given: the SAME skill entry must have this activity at this level.
+  // Either alone: match any skill entry with that activity, or that level.
+  if (activity && skillLevel) {
+    filter.skills = {
+      $elemMatch: { activity: new mongoose.Types.ObjectId(activity), level: skillLevel },
+    };
+  } else if (activity) {
+    filter["skills.activity"] = activity;
+  } else if (skillLevel) {
+    filter["skills.level"] = skillLevel;
   }
 
   // Filter by availability
@@ -89,7 +97,7 @@ const searchPartners = async (req, res) => {
 
   const profiles = await Profile.find(filter)
     .populate("user", "name email")
-    .populate("activities", "name")
+    .populate("skills.activity", "name")
     .sort({ createdAt: -1 });
 
   return successResponse(

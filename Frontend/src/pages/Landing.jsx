@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const CATEGORIES = [
   "Sports",
@@ -31,17 +32,29 @@ const FLOATING_ICONS = [
   { emoji: "🎾", className: "bottom-20 right-10 rotate-12 text-4xl", from: "right" },
 ];
 
-// Collage tiles: original gradient + emoji cards (no third-party imagery).
+// Collage tiles: real activity photos, cropped to fixed heights via object-cover.
 const TILES = [
-  { emoji: "🏸", label: "Badminton", bg: "from-amber-400 to-orange-500", h: "h-40" },
-  { emoji: "🏃", label: "Running", bg: "from-emerald-400 to-teal-600", h: "h-56" },
-  { emoji: "🎸", label: "Jam session", bg: "from-fuchsia-500 to-purple-700", h: "h-48" },
-  { emoji: "🧗", label: "Climbing", bg: "from-sky-400 to-blue-600", h: "h-56" },
-  { emoji: "♟️", label: "Chess", bg: "from-slate-500 to-slate-800", h: "h-40" },
-  { emoji: "🚴", label: "Cycling", bg: "from-rose-400 to-red-600", h: "h-48" },
+  { image: "/badmintion.webp", label: "Badminton", h: "h-40" },
+  { image: "/running.webp", label: "Running", h: "h-56" },
+  { image: "/gamming.webp", label: "Gaming", h: "h-48" },
+  { image: "/studies.webp", label: "Study buddies", h: "h-56" },
+  { image: "/gym.webp", label: "Gym", h: "h-40" },
+  { image: "/movie.webp", label: "Movie night", h: "h-48" },
+];
+
+// Candid meetup photos for the "Real people" marquee section.
+const MOMENTS = [
+  { image: "/cricket.webp", tag: "Cricket", caption: "Weekend Gully Cricket Match" },
+  { image: "/football.webp", tag: "Football", caption: "Evening turf football match" },
+  { image: "/bowling.webp", tag: "Bowling", caption: "Strike night at the alley" },
+  { image: "/guitar.webp", tag: "Music", caption: "Acoustic guitar & song jam" },
+  { image: "/dance.webp", tag: "Dance", caption: "High energy dance workout" },
+  { image: "/book-reading.webp", tag: "Book Club", caption: "Coffee & novel discussion" },
+  { image: "/yoga.webp", tag: "Yoga", caption: "Sunrise yoga & meditation" },
 ];
 
 const Landing = () => {
+  const { user } = useAuth();
   // Toggles the icon slide-in/out as the app-preview section scrolls in and
   // out of view — re-fires both ways, unlike a typical one-shot scroll reveal.
   const iconsRef = useRef(null);
@@ -87,18 +100,29 @@ const Landing = () => {
           </p>
 
           <div className="mt-8 flex items-center gap-3 flex-wrap">
-            <Link
-              to="/register"
-              className="px-6 py-3 text-sm font-bold text-neutral-950 bg-yellow-400 rounded-lg hover:bg-yellow-300 transition-colors no-underline"
-            >
-              Get started — it's free
-            </Link>
-            <Link
-              to="/login"
-              className="px-6 py-3 text-sm font-semibold text-neutral-900 border border-neutral-300 rounded-lg hover:bg-neutral-100 transition-colors no-underline"
-            >
-              Log in
-            </Link>
+            {user ? (
+              <Link
+                to="/discover"
+                className="px-6 py-3 text-sm font-bold text-neutral-950 bg-yellow-400 rounded-lg hover:bg-yellow-300 transition-colors no-underline shadow-sm"
+              >
+                Explore partners nearby →
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/register"
+                  className="px-6 py-3 text-sm font-bold text-neutral-950 bg-yellow-400 rounded-lg hover:bg-yellow-300 transition-colors no-underline"
+                >
+                  Get started — it's free
+                </Link>
+                <Link
+                  to="/login"
+                  className="px-6 py-3 text-sm font-semibold text-neutral-900 border border-neutral-300 rounded-lg hover:bg-neutral-100 transition-colors no-underline"
+                >
+                  Log in
+                </Link>
+              </>
+            )}
           </div>
         </div>
 
@@ -114,12 +138,19 @@ const Landing = () => {
                     style={{ animationDelay: `${(i * 2 + ti) * 0.08}s` }}
                   >
                     <div
-                      className={`h-full rounded-2xl bg-gradient-to-br ${t.bg} p-3 flex flex-col justify-between border border-black/5 shadow-lg transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-105 hover:shadow-2xl relative hover:z-10 cursor-default`}
+                      className="h-full rounded-2xl overflow-hidden border border-black/5 shadow-lg transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-105 hover:shadow-2xl relative hover:z-10 cursor-default"
                     >
-                      <span className="text-4xl sm:text-5xl">{t.emoji}</span>
-                      <span className="text-xs font-bold uppercase tracking-wider text-white/90">
-                        {t.label}
-                      </span>
+                      <img
+                        src={t.image}
+                        alt={t.label}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-transparent" />
+                      <div className="relative h-full p-3 flex flex-col justify-end">
+                        <span className="text-xs font-bold uppercase tracking-wider text-white">
+                          {t.label}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -127,21 +158,45 @@ const Landing = () => {
             ))}
           </div>
 
+          {/* Sits in the empty pocket the grid's own uneven column heights
+              leave below-right of the Cycling tile — not over any tile.
+              right-0 (not a negative offset) keeps it inside the collage's
+              own box so it can't push the page into horizontal scroll on
+              narrow screens. */}
           <div
-            className="absolute -left-2 sm:-left-6 top-1/2 -translate-y-1/2 rounded-xl border-2 border-dashed border-yellow-500 bg-white px-4 py-3 shadow-xl fade-in transition-transform duration-300 hover:scale-105"
+            className="absolute -bottom-5 right-0 z-20 rounded-xl border-2 border-dashed border-yellow-500 bg-white px-3.5 py-2.5 shadow-xl fade-in transition-transform duration-300 hover:scale-105"
             style={{ animationDelay: "0.5s" }}
           >
             <div className="text-[10px] font-mono uppercase tracking-widest text-neutral-500">
               Match score
             </div>
-            <div className="text-3xl font-extrabold text-yellow-600 leading-tight">92%</div>
-            <div className="text-xs text-neutral-500">activity · distance · level</div>
+            <div className="text-2xl font-extrabold text-yellow-600 leading-tight">92%</div>
+            <div className="text-[11px] text-neutral-500">activity · distance · level</div>
           </div>
         </div>
       </section>
 
-      {/* APP PREVIEW */}
-      <section className="max-w-6xl mx-auto px-5 py-16 sm:py-24">
+      {/* CATEGORY STRIP */}
+      <div className="bg-yellow-400 text-neutral-950 py-4 overflow-hidden">
+        <div className="flex marquee-track">
+          {[0, 1].map((copy) => (
+            <div key={copy} aria-hidden={copy === 1} className="flex shrink-0">
+              {CATEGORIES.map((c) => (
+                <span
+                  key={c}
+                  className="flex items-center shrink-0 mx-4 text-xs sm:text-sm font-bold uppercase tracking-[0.2em]"
+                >
+                  {c}
+                  <span className="ml-4 text-base">✦</span>
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* APP PREVIEW (INSIDE THE APP) */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-5 py-14 sm:py-24">
         <div className="text-center max-w-xl mx-auto">
           <span className="inline-flex items-center gap-2 rounded-xl border-2 border-dashed border-yellow-400 bg-yellow-50 px-4 py-2 text-xs font-bold tracking-widest text-yellow-700 uppercase font-mono">
             ✨ Inside the app
@@ -157,7 +212,29 @@ const Landing = () => {
           </p>
         </div>
 
-        <div className="relative mx-auto mt-16 max-w-3xl">
+        <div className="relative mx-auto mt-12 sm:mt-16 max-w-3xl">
+          {/* Mobile Proof Badges (Shown on mobile devices) */}
+          <div className="flex md:hidden flex-wrap items-center justify-center gap-3 mb-6">
+            <div className="rounded-xl bg-white border border-neutral-200 shadow-md px-3.5 py-2 flex items-center gap-2 text-left">
+              <span className="w-6 h-6 shrink-0 rounded-full bg-emerald-100 flex items-center justify-center text-xs">
+                💚
+              </span>
+              <div>
+                <span className="block text-xs font-bold text-neutral-900 leading-tight">It's a match!</span>
+                <span className="text-[10px] text-neutral-500">Badminton in Gurugram</span>
+              </div>
+            </div>
+            <div className="rounded-xl bg-white border border-neutral-200 shadow-md px-3.5 py-2 flex items-center gap-2 text-left">
+              <span className="w-6 h-6 shrink-0 rounded-full bg-yellow-100 flex items-center justify-center text-xs">
+                📍
+              </span>
+              <div>
+                <span className="block text-xs font-bold text-neutral-900 leading-tight">3 partners nearby</span>
+                <span className="text-[10px] text-neutral-500">Free tonight</span>
+              </div>
+            </div>
+          </div>
+
           {/* Decorative icons spread across the wide canvas, desktop only */}
           <div ref={iconsRef} className="hidden lg:block">
             {FLOATING_ICONS.map((f, i) => (
@@ -191,7 +268,7 @@ const Landing = () => {
           </div>
 
           {/* Phone + proof cards, centered */}
-          <div className="relative z-10 mx-auto w-full max-w-[260px] sm:max-w-[300px] h-[520px]">
+          <div className="relative z-10 mx-auto w-full max-w-[260px] sm:max-w-[300px] h-[500px] sm:h-[520px]">
             <div className="hidden md:block absolute z-20 -right-36 top-8 w-44 rounded-xl bg-white border border-neutral-200 shadow-xl px-4 py-3 -rotate-2">
               <div className="flex items-center gap-2">
                 <span className="w-7 h-7 shrink-0 rounded-full bg-emerald-100 flex items-center justify-center text-sm">
@@ -263,6 +340,52 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* REAL MOMENTS (REAL MEETUPS) */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-5 py-14 sm:py-24">
+        <div className="text-center max-w-xl mx-auto">
+          <span className="inline-flex items-center gap-2 rounded-xl border-2 border-dashed border-yellow-400 bg-yellow-50 px-4 py-2 text-xs font-bold tracking-widest text-yellow-700 uppercase font-mono">
+            Real meetups
+          </span>
+          <h2
+            className="mt-5 m-0 uppercase leading-[0.95] tracking-tight text-3xl sm:text-5xl"
+            style={{ fontFamily: "'Anton', Impact, 'Arial Narrow', sans-serif", fontWeight: 400 }}
+          >
+            Real people. Real plans.
+          </h2>
+          <p className="mt-4 mb-0 text-sm sm:text-base text-neutral-600">
+            Every match is someone nearby who actually wants to show up.
+          </p>
+        </div>
+
+        <div className="mt-10 overflow-hidden w-full py-4">
+          <div className="flex marquee-track gap-4 select-none">
+            {[0, 1].map((copy) => (
+              <div key={copy} aria-hidden={copy === 1} className="flex shrink-0 gap-4">
+                {MOMENTS.map((m) => (
+                  <div
+                    key={`${copy}-${m.image}`}
+                    className="relative w-60 sm:w-72 aspect-[3/4] shrink-0 rounded-2xl overflow-hidden shadow-lg group hover:scale-[1.03] transition-transform duration-300"
+                  >
+                    <img
+                      src={m.image}
+                      alt={m.caption}
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    <span className="absolute top-3 left-3 bg-yellow-400 text-neutral-950 px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider shadow font-mono">
+                      {m.tag}
+                    </span>
+                    <p className="absolute bottom-3 left-3 right-3 m-0 text-xs sm:text-sm font-bold text-white leading-snug">
+                      {m.caption}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* HOW IT WORKS */}
       <section id="how-it-works" className="bg-neutral-950 text-white px-5 py-16 sm:py-24">
         <div className="max-w-6xl mx-auto">
@@ -300,25 +423,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* CATEGORY STRIP */}
-      <div className="bg-yellow-400 text-neutral-950 py-4 overflow-hidden">
-        <div className="flex marquee-track">
-          {[0, 1].map((copy) => (
-            <div key={copy} aria-hidden={copy === 1} className="flex shrink-0">
-              {CATEGORIES.map((c) => (
-                <span
-                  key={c}
-                  className="flex items-center shrink-0 mx-4 text-xs sm:text-sm font-bold uppercase tracking-[0.2em]"
-                >
-                  {c}
-                  <span className="ml-4 text-base">✦</span>
-                </span>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* CTA */}
       <section className="bg-yellow-400 text-neutral-950 px-5 py-16 sm:py-20">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center sm:items-end justify-between gap-10 text-center sm:text-left">
@@ -332,12 +436,21 @@ const Landing = () => {
           </h2>
 
           <div className="flex flex-col items-center sm:items-end gap-3 shrink-0">
-            <Link
-              to="/register"
-              className="px-8 py-4 text-sm font-bold uppercase tracking-widest text-yellow-300 bg-neutral-950 rounded-lg hover:bg-neutral-800 transition-colors no-underline"
-            >
-              Get started now
-            </Link>
+            {user ? (
+              <Link
+                to="/discover"
+                className="px-8 py-4 text-sm font-bold uppercase tracking-widest text-yellow-300 bg-neutral-950 rounded-lg hover:bg-neutral-800 transition-colors no-underline"
+              >
+                Go to Discover
+              </Link>
+            ) : (
+              <Link
+                to="/register"
+                className="px-8 py-4 text-sm font-bold uppercase tracking-widest text-yellow-300 bg-neutral-950 rounded-lg hover:bg-neutral-800 transition-colors no-underline"
+              >
+                Get started now
+              </Link>
+            )}
             <p className="m-0 text-xs font-mono uppercase tracking-widest text-neutral-800">
               Free to join · No app required
             </p>
@@ -345,48 +458,52 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="bg-white text-neutral-600 px-5 py-12 border-t border-neutral-200">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-10">
-            <div className="max-w-xs">
-              <img src="/logo.webp" alt="NearPair" className="h-12 sm:h-14 w-auto" />
-              <p className="mt-3 mb-0 text-sm leading-relaxed">
-                Match with people nearby who share your sport, hobby, or skill
-                level — then chat, schedule a session, and go do it together.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="m-0 text-xs font-bold uppercase tracking-widest text-neutral-900">
-                Product
-              </h3>
-              <ul className="list-none p-0 mt-4 mb-0 flex flex-col gap-3 text-sm">
-                <li>
-                  <a href="#how-it-works" className="text-neutral-600 hover:text-neutral-900 transition-colors no-underline">
-                    How it works
-                  </a>
-                </li>
-                <li>
-                  <Link to="/register" className="text-neutral-600 hover:text-neutral-900 transition-colors no-underline">
-                    Get started
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/login" className="text-neutral-600 hover:text-neutral-900 transition-colors no-underline">
-                    Log in
-                  </Link>
-                </li>
-              </ul>
-            </div>
+      {/* FIND PARTNER NEARBY SECTION - LAST SECTION ABOVE FOOTER */}
+      <section className="bg-white text-neutral-900 py-16 px-5 sm:py-24 border-t border-neutral-200">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          {/* Left: nearby.webp image */}
+          <div className="relative overflow-hidden rounded-3xl border border-neutral-200 shadow-2xl group">
+            <img
+              src="/nearby.webp"
+              alt="Find partner nearby you"
+              className="w-full h-52 sm:h-64 object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+            <span className="absolute bottom-5 left-5 bg-yellow-400 text-neutral-950 px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-wider shadow-lg font-mono">
+              📍 Real Partners Near You
+            </span>
           </div>
 
-          <div className="mt-12 pt-6 border-t border-neutral-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-center sm:text-left">
-            <p className="m-0">© {new Date().getFullYear()} NearPair. Never go solo.</p>
-            <p className="m-0">Made for people who'd rather show up together.</p>
+          {/* Right: Text related to find partner nearby you */}
+          <div className="flex flex-col items-start gap-5">
+            <span className="inline-flex items-center gap-2 rounded-xl border-2 border-dashed border-yellow-400 bg-yellow-50 px-4 py-2 text-xs font-bold tracking-widest text-yellow-700 uppercase font-mono">
+              <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
+              Find Partner Nearby You
+            </span>
+
+            <h2
+              className="m-0 text-4xl sm:text-6xl uppercase tracking-tight text-neutral-900 leading-[0.95]"
+              style={{ fontFamily: "'Anton', Impact, sans-serif", fontWeight: 400 }}
+            >
+              Connect with activity <span className="text-yellow-500">partners nearby</span>
+            </h2>
+
+            <p className="m-0 text-base sm:text-lg text-neutral-600 leading-relaxed">
+              Never go solo again. Discover people right in your city who match your exact sport, hobby, skill level, and schedule — then chat, plan a time, and show up together.
+            </p>
+
+            <div className="pt-3">
+              <Link
+                to={user ? "/discover" : "/register"}
+                className="px-7 py-3.5 text-sm font-bold text-yellow-300 bg-neutral-950 rounded-xl hover:bg-neutral-800 transition-colors no-underline inline-flex items-center gap-2 shadow-lg"
+              >
+                {user ? "Explore partners nearby →" : "Find your partner nearby →"}
+              </Link>
+            </div>
           </div>
         </div>
-      </footer>
+      </section>
+
     </div>
   );
 };

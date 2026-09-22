@@ -26,13 +26,47 @@ const validateAvatar = (avatar) => {
     }
 };
 
+const SKILL_LEVELS = ["beginner", "intermediate", "advanced"];
+
+const validateSkills = async (skills) => {
+    if (!skills?.length) return;
+
+    const activityIds = skills.map((s) => s?.activity);
+
+    const invalidLevel = skills.some((s) => !SKILL_LEVELS.includes(s?.level));
+    if (invalidLevel) {
+        const error = new Error("One or more skill levels are invalid");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const uniqueActivityIds = new Set(activityIds.map(String));
+    if (uniqueActivityIds.size !== activityIds.length) {
+        const error = new Error("Each activity can only be added once");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const validActivities = await Activity.countDocuments({
+        _id: { $in: activityIds },
+        isActive: true,
+    });
+
+    if (validActivities !== activityIds.length) {
+        const error = new Error("One or more activities are invalid");
+        error.statusCode = 400;
+        throw error;
+    }
+};
+
 
 const createProfile = async(req,res) =>{
-    const {avatar,bio,activities,skillLevel,
+    const {avatar,bio,skills,
     availability,
     location,} = req.body;
 
     validateAvatar(avatar);
+    await validateSkills(skills);
 
     const existingProfile = await Profile.findOne({ user:req.user.id})
 
@@ -42,32 +76,18 @@ const createProfile = async(req,res) =>{
         throw error;
     }
 
-    if(activities?.length){
-        const validActivities =await Activity.countDocuments({
-            _id:{$in:activities},
-            isActive:true
-        })
-
-        if(validActivities !== activities.length){
-            const error = new Error ("One or more activities are invalid")
-            error.statusCode=400
-            throw error;
-        }
-    }
-
     const profile = await Profile.create({
         user:req.user.id,
         avatar,
            bio,
-    activities,
-    skillLevel,
+    skills,
     availability,
     location: buildLocation(location),
     })
 
 
 
-    await profile.populate("activities");
+    await profile.populate("skills.activity");
 
     return successResponse(res,{profile},"Profile created successfully",201)
 }
@@ -76,7 +96,7 @@ const createProfile = async(req,res) =>{
 const getMyProfile = async (req,res) =>{
     const profile = await Profile.findOne({user:req.user.id})
     .populate("user","name email role")
-    .populate("activities");
+    .populate("skills.activity");
 
     if(!profile){
         const error=new Error("Profile not found")
@@ -94,12 +114,12 @@ const updateMyProfile = async (req,res) =>{
 
     const {  avatar,
     bio,
-    activities,
-    skillLevel,
+    skills,
     availability,
     location } = req.body;
 
     validateAvatar(avatar);
+    await validateSkills(skills);
 
     const profile=await Profile.findOne({ user:req.user.id})
 
@@ -110,38 +130,36 @@ const updateMyProfile = async (req,res) =>{
         throw error;
     }
 
-    if(activities){
-        const  validActivities = await Activity.countDocuments({
-            _id:{$in: activities},
-            isActive:true
-        })
-
-        if(validActivities !== activities.length){
-            const error = new Error ("One or more activities are invalid")
-            error.statusCode=400
-            throw error;
-        }
-
-        profile.activities=activities
-    }
+    if(skills !== undefined) profile.skills = skills;
 
      if (avatar !== undefined) profile.avatar = avatar;
      if (bio !== undefined) profile.bio = bio;
-       if (skillLevel !== undefined) profile.skillLevel = skillLevel;
   if (availability !== undefined) profile.availability = availability;
     if (location !== undefined) profile.location = buildLocation(location, profile.location?.point);
 
     await profile.save();
 
-    await profile.populate("activities");
+    await profile.populate("skills.activity");
 
     return successResponse(res,{profile},"profile updated successfully")
 
 }
 
 
+const getCities = async (req, res) => {
+  const rawCities = await Profile.distinct("location.city", {
+    "location.city": { $exists: true, $ne: "" },
+  });
+  const cities = rawCities
+    .map((c) => (typeof c === "string" ? c.trim() : ""))
+    .filter(Boolean)
+    .sort();
+  return successResponse(res, { cities }, "Cities fetched successfully");
+};
+
 module.exports = {
   createProfile,
   getMyProfile,
   updateMyProfile,
+  getCities,
 };
