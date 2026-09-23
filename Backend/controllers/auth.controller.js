@@ -269,6 +269,24 @@ const googleLogin = async (req, res) => {
 };
 
 
+// The Socket.io connection goes directly to this server's own origin rather
+// than through the same-origin proxy REST calls use in production (see
+// Frontend/vercel.json) — so the httpOnly cookie, scoped to the proxy's
+// origin, never reaches it. An already-authenticated request (proved via the
+// cookie, same as any other protected route) exchanges it for a short-lived
+// token the frontend can pass explicitly in the socket handshake instead.
+const getSocketToken = (req, res) => {
+    const JWT_SECRET = process.env.JWT_SECRET || process.env.JWT_SECRETS || 'dev-secret-key';
+
+    const token = jwt.sign(
+        { id: req.user.id, role: req.user.role },
+        JWT_SECRET,
+        { expiresIn: '1h' }
+    );
+
+    return successResponse(res, { token }, "Socket token issued");
+};
+
 //current user
 
 const getCurrentUser= async (req,res)=>{
@@ -312,5 +330,5 @@ const logout=async(req,res)=>{
 
 
 module.exports={
-    register,login,googleLogin,getCurrentUser,logout
+    register,login,googleLogin,getCurrentUser,logout,getSocketToken
 }

@@ -69,14 +69,24 @@ const initializeSocket = (server) => {
     io.use(async (socket, next) => {
         let decoded;
         try {
-            const cookieHeader = socket.handshake.headers.cookie;
+            // Prefer an explicit token (GET /api/auth/socket-token) over the
+            // cookie: in production this connection goes directly to this
+            // server's own origin rather than through the same-origin proxy
+            // REST calls use, so the httpOnly cookie — scoped to the proxy's
+            // origin — never arrives here. Local dev still works via the
+            // cookie fallback, since frontend and backend share "localhost".
+            let token = socket.handshake.auth?.token;
 
-            if (!cookieHeader) {
-                return next(new Error("Authentication required"));
+            if (!token) {
+                const cookieHeader = socket.handshake.headers.cookie;
+
+                if (!cookieHeader) {
+                    return next(new Error("Authentication required"));
+                }
+
+                const cookies = parseCookie(cookieHeader);
+                token = cookies?.token;
             }
-
-            const cookies = parseCookie(cookieHeader);
-            const token = cookies?.token;
 
             if (!token) {
                 return next(new Error("Authentication required"));

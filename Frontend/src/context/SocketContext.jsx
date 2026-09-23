@@ -164,9 +164,21 @@ export const SocketProvider = ({ children }) => {
       return;
     }
 
-    // Instantiate Socket.io client
+    // Instantiate Socket.io client. `auth` as a function (rather than a
+    // plain object) is called fresh before every (re)connection attempt —
+    // needed because this connects directly to the backend's own origin
+    // rather than through the same-origin proxy REST calls use in
+    // production, so the httpOnly cookie never reaches it there. The token
+    // is short-lived (1h), so refetching per attempt also covers a long-idle
+    // reconnect outliving an earlier token.
     const newSocket = io(SOCKET_URL, {
       withCredentials: true,
+      auth: (cb) => {
+        apiClient
+          .get("/auth/socket-token")
+          .then(({ data }) => cb({ token: data.data?.token }))
+          .catch(() => cb({}));
+      },
     });
     setSocket(newSocket);
 
