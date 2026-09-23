@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSocket } from "../context/SocketContext";
 import apiClient from "../api/client";
 import UserProfileModal from "./UserProfileModal";
+import UserActionsMenu from "./UserActionsMenu";
 
 const ChatWindow = ({ userId, userName }) => {
     const [showProfileModal, setShowProfileModal] = useState(false);
