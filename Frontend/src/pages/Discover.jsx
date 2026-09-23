@@ -288,12 +288,12 @@ const Discover = () => {
 
       <form
         onSubmit={runSearch}
-        className="bg-white border border-slate-200/80 rounded-2xl p-4 mb-6 flex flex-wrap gap-2 items-center"
+        className="bg-white border border-slate-200/80 rounded-2xl p-4 mb-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2"
       >
         <select
           value={filters.activity}
           onChange={(e) => setFilter("activity", e.target.value)}
-          className={inputClass}
+          className={`${inputClass} w-full sm:w-auto`}
         >
           <option value="">Any activity</option>
           {activitiesByCategory.map((category) => (
@@ -318,7 +318,7 @@ const Discover = () => {
                 setFilter("city", e.target.value);
                 setShowSuggestions(true);
               }}
-              className={`${inputClass} w-36 sm:w-44`}
+              className={`${inputClass} flex-1 min-w-0 sm:w-44 sm:flex-none`}
             />
             <button
               type="button"
@@ -354,47 +354,52 @@ const Discover = () => {
           )}
         </div>
 
-        <select
-          value={filters.radiusKm}
-          onChange={(e) => setFilter("radiusKm", e.target.value)}
-          className={inputClass}
-        >
-          <option value="">Any distance</option>
-          <option value="5">5 km</option>
-          <option value="10">10 km</option>
-          <option value="25">25 km</option>
-          <option value="50">50 km</option>
-        </select>
+        <div className="grid grid-cols-2 gap-2 w-full sm:contents">
+          <select
+            value={filters.radiusKm}
+            onChange={(e) => setFilter("radiusKm", e.target.value)}
+            className={inputClass}
+          >
+            <option value="">Any distance</option>
+            <option value="5">5 km</option>
+            <option value="10">10 km</option>
+            <option value="25">25 km</option>
+            <option value="50">50 km</option>
+          </select>
 
-        <select
-          value={filters.day}
-          onChange={(e) => setFilter("day", e.target.value)}
-          className={inputClass}
-        >
-          {DAYS.map((day) => (
-            <option key={day} value={day}>
-              {day || "Any day"}
-            </option>
-          ))}
-        </select>
+          <select
+            value={filters.day}
+            onChange={(e) => setFilter("day", e.target.value)}
+            className={inputClass}
+          >
+            {DAYS.map((day) => (
+              <option key={day} value={day}>
+                {day || "Any day"}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        <input
-          type="time"
-          value={filters.startTime}
-          onChange={(e) => setFilter("startTime", e.target.value)}
-          className={inputClass}
-        />
-        <input
-          type="time"
-          value={filters.endTime}
-          onChange={(e) => setFilter("endTime", e.target.value)}
-          className={inputClass}
-        />
+        <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center w-full sm:contents">
+          <input
+            type="time"
+            value={filters.startTime}
+            onChange={(e) => setFilter("startTime", e.target.value)}
+            className={inputClass}
+          />
+          <span className="text-sm text-slate-400 sm:hidden">to</span>
+          <input
+            type="time"
+            value={filters.endTime}
+            onChange={(e) => setFilter("endTime", e.target.value)}
+            className={inputClass}
+          />
+        </div>
 
         <select
           value={filters.skillLevel}
           onChange={(e) => setFilter("skillLevel", e.target.value)}
-          className={inputClass}
+          className={`${inputClass} w-full sm:w-auto`}
         >
           {SKILL_LEVELS.map((level) => (
             <option key={level} value={level}>
@@ -405,7 +410,7 @@ const Discover = () => {
 
         <button
           type="submit"
-          className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 cursor-pointer"
+          className="w-full sm:w-auto px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 cursor-pointer"
         >
           Search
         </button>
