@@ -39,12 +39,17 @@ const emptySlot = () => ({ startTime: "", endTime: "" });
 const sameDays = (a, b) => a.length === b.length && a.every((d) => b.includes(d));
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, refreshAvatar } = useAuth();
   const [loading, setLoading] = useState(true);
   const [hasProfile, setHasProfile] = useState(false);
   const [activityOptions, setActivityOptions] = useState([]);
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [expandedCategories, setExpandedCategories] = useState(() => new Set());
+  const [showAddActivity, setShowAddActivity] = useState(false);
+  const [newActivityName, setNewActivityName] = useState("");
+  const [newActivityCategory, setNewActivityCategory] = useState("");
+  const [addActivityError, setAddActivityError] = useState("");
+  const [addingActivity, setAddingActivity] = useState(false);
 
   const [avatar, setAvatar] = useState("");
   const [bio, setBio] = useState("");
@@ -204,6 +209,42 @@ const Profile = () => {
     });
   };
 
+  const handleAddActivity = async () => {
+    setAddActivityError("");
+
+    if (newActivityName.trim().length < 2) {
+      setAddActivityError("Give it a name (at least 2 characters)");
+      return;
+    }
+
+    if (!newActivityCategory) {
+      setAddActivityError("Pick a category for it");
+      return;
+    }
+
+    setAddingActivity(true);
+    try {
+      const { data } = await apiClient.post("/activities", {
+        name: newActivityName.trim(),
+        category: newActivityCategory,
+      });
+      const activity = data.data?.activity;
+      if (activity) {
+        setActivityOptions((prev) => [...prev, activity]);
+        // They're adding it in order to add it as a skill — do that for them.
+        setSkills((prev) => [...prev, { activity: activity._id, level: "beginner" }]);
+        setExpandedCategories((prev) => new Set(prev).add(activity.category?._id || newActivityCategory));
+      }
+      setNewActivityName("");
+      setNewActivityCategory("");
+      setShowAddActivity(false);
+    } catch (err) {
+      setAddActivityError(err.response?.data?.message || "Couldn't add that activity");
+    } finally {
+      setAddingActivity(false);
+    }
+  };
+
   const toggleDay = (day) => {
     setSelectedDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
   };
@@ -247,6 +288,9 @@ const Profile = () => {
         await loadProfile();
       }
       setLocationCaptured(false);
+      // The navbar avatar lives in AuthContext, separate from this page's
+      // own state, so a photo change/removal needs its own refresh signal.
+      if (refreshAvatar) refreshAvatar();
     } catch (err) {
       setErrorMsg(err.response?.data?.message || "Failed to save profile");
     } finally {
@@ -403,6 +447,78 @@ const Profile = () => {
                 );
               })}
             </div>
+
+            {showAddActivity ? (
+              // A plain div, not <form> — this already sits inside the profile's
+              // own <form>, and HTML doesn't allow nesting forms.
+              <div className="mt-3 p-3 rounded-lg border border-dashed border-neutral-300 flex flex-col gap-2">
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    type="text"
+                    value={newActivityName}
+                    onChange={(e) => setNewActivityName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddActivity();
+                      }
+                    }}
+                    placeholder="Activity name"
+                    minLength={2}
+                    className={`${inputClass} flex-1 min-w-[140px]`}
+                  />
+                  <select
+                    value={newActivityCategory}
+                    onChange={(e) => setNewActivityCategory(e.target.value)}
+                    className={`${inputClass} w-auto`}
+                  >
+                    <option value="">Category...</option>
+                    {categoryOptions.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.emoji} {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {addActivityError && (
+                  <span role="alert" className="text-xs text-red-600">
+                    {addActivityError}
+                  </span>
+                )}
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleAddActivity}
+                    disabled={addingActivity}
+                    className="px-3 py-1.5 text-xs font-bold text-neutral-950 bg-yellow-400 rounded-lg hover:bg-yellow-300 transition-colors disabled:opacity-60 cursor-pointer"
+                  >
+                    {addingActivity ? "Adding..." : "Add"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddActivity(false);
+                      setAddActivityError("");
+                      setNewActivityName("");
+                      setNewActivityCategory("");
+                    }}
+                    className="px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 rounded-lg cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowAddActivity(true)}
+                className="mt-3 px-3 py-1.5 text-xs font-medium text-neutral-600 border border-dashed border-neutral-300 rounded-lg hover:bg-neutral-50 cursor-pointer"
+              >
+                + Add a custom activity
+              </button>
+            )}
           </div>
 
           <label className={labelClass}>

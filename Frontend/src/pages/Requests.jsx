@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import apiClient from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import { useSocket } from "../context/SocketContext";
 
 const statusColor = {
   pending: "#d97706",
@@ -62,6 +63,7 @@ const actionButtonStyle = (bg) => ({
 
 const Requests = () => {
   const { user } = useAuth();
+  const { fetchPendingRequestCount } = useSocket() || {};
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
@@ -92,6 +94,7 @@ const Requests = () => {
         await apiClient.patch(`/requests/${id}/${action}`);
       }
       await load();
+      if (fetchPendingRequestCount) fetchPendingRequestCount();
     } catch (err) {
       setErrorMsg(err.response?.data?.message || `Failed to ${action} request`);
     } finally {

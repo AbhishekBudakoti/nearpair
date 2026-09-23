@@ -11,9 +11,26 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Profile picture, shown in the navbar next to the user's name. Lives on
+  // the separate Profile document, not the User — undefined until a profile
+  // exists, so the navbar falls back to the name/initial.
+  const [avatarUrl, setAvatarUrl] = useState("");
   // Message shown on the login page when the user was signed out by the
   // server (e.g. "Your account is suspended until 2026-09-20").
   const [authNotice, setAuthNotice] = useState("");
+
+  /**
+   * Re-fetches just the avatar — call after a profile save so the navbar
+   * picks up a new/changed/removed photo without a full auth re-check.
+   */
+  const refreshAvatar = useCallback(async () => {
+    try {
+      const { data } = await apiClient.get("/profile/me");
+      setAvatarUrl(data.data?.profile?.avatar || "");
+    } catch {
+      setAvatarUrl("");
+    }
+  }, []);
 
   /**
    * Re-checks auth status against the backend. Call after login/register/logout
@@ -23,19 +40,27 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       const { data } = await apiClient.get("/auth/me");
-      setUser(data.data?.user || null);
+      const nextUser = data.data?.user || null;
+      setUser(nextUser);
+      if (nextUser) {
+        await refreshAvatar();
+      } else {
+        setAvatarUrl("");
+      }
     } catch {
       setUser(null);
+      setAvatarUrl("");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [refreshAvatar]);
 
   const logout = useCallback(async () => {
     try {
       await apiClient.post("/auth/logout");
     } finally {
       setUser(null);
+      setAvatarUrl("");
     }
   }, []);
 
@@ -58,7 +83,9 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, refresh, logout, authNotice, clearAuthNotice }}>
+    <AuthContext.Provider
+      value={{ user, loading, refresh, logout, authNotice, clearAuthNotice, avatarUrl, refreshAvatar }}
+    >
       {children}
     </AuthContext.Provider>
   );

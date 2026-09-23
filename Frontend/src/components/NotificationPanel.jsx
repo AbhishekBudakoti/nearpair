@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useSocket } from "../context/SocketContext";
 
 /**
@@ -8,6 +8,22 @@ import { useSocket } from "../context/SocketContext";
 export const NotificationPanel = () => {
   // Toggle state for displaying the notifications dropdown panel
   const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  // Close the panel on any click outside it — the bell button's own click
+  // still toggles normally since this only fires for clicks elsewhere.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (event) => {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
 
   // Consume notification state and action handlers from SocketContext
   const {
@@ -38,7 +54,7 @@ export const NotificationPanel = () => {
   };
 
   return (
-    <div style={{ position: "relative", display: "inline-block", fontFamily: "sans-serif" }}>
+    <div ref={containerRef} style={{ position: "relative", display: "inline-block", fontFamily: "sans-serif" }}>
       {/* Notification Bell Button */}
       <button
         onClick={togglePanel}

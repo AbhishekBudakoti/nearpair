@@ -36,6 +36,10 @@ export const SocketProvider = ({ children }) => {
   // Counter for unread notifications
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
+  // Count of partner requests received (not sent) that are still pending —
+  // drives the badge on the "Requests" nav item.
+  const [pendingRequestCount, setPendingRequestCount] = useState(0);
+
   // Array of real-time chat messages
   const [chatMessages, setChatMessages] = useState([]);
 
@@ -77,6 +81,27 @@ export const SocketProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("Error fetching notifications:", error);
+    }
+  };
+
+  /**
+   * Refetches how many pending partner requests this user has received —
+   * called on connect and whenever a notification arrives, since any of
+   * partner_request / request_accepted / request_rejected / request_cancelled
+   * can change it (accept/reject are the current user's own actions and
+   * refresh this directly rather than waiting on a notification).
+   */
+  const fetchPendingRequestCount = async () => {
+    if (!userId) return;
+    try {
+      const { data } = await apiClient.get("/requests");
+      const requests = data.data?.requests || [];
+      const count = requests.filter(
+        (r) => r.status === "pending" && r.recipient?._id === userId
+      ).length;
+      setPendingRequestCount(count);
+    } catch (error) {
+      console.error("Error fetching pending request count:", error);
     }
   };
 
@@ -152,6 +177,7 @@ export const SocketProvider = ({ children }) => {
       console.log("Socket Connected:", newSocket.id);
       setConnected(true);
       fetchNotifications();
+      fetchPendingRequestCount();
     });
 
     // Triggered when socket disconnects
@@ -207,6 +233,13 @@ export const SocketProvider = ({ children }) => {
         return [newNotif, ...prev];
       });
       setUnreadNotificationCount((prev) => prev + 1);
+
+      // A new/cancelled partner request is exactly the kind of thing that
+      // changes this count — cheap enough to just refetch rather than trying
+      // to reason about which notification types move it which direction.
+      if (newNotif.type === "partner_request" || newNotif.type === "request_cancelled") {
+        fetchPendingRequestCount();
+      }
     });
 
     // --- CHAT EVENT HANDLERS ---
@@ -321,6 +354,8 @@ export const SocketProvider = ({ children }) => {
         fetchNotifications,
         markAsRead,
         markAllAsRead,
+        pendingRequestCount,
+        fetchPendingRequestCount,
         chatMessages,
         sendMessage,
         chatError,

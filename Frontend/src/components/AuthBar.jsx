@@ -9,7 +9,7 @@ import { useSocket } from "../context/SocketContext";
  * form lives on the /login page.
  */
 export const AuthBar = () => {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, avatarUrl } = useAuth();
   const { disconnectSocket } = useSocket() || {};
 
   const handleLogout = async () => {
@@ -44,9 +44,16 @@ export const AuthBar = () => {
     <div className="flex items-center gap-2.5">
       <Link
         to="/profile"
-        className="hidden sm:inline text-sm font-medium text-slate-800 hover:text-amber-500 hover:font-bold transition-all no-underline"
+        className="hidden sm:flex items-center gap-2 text-sm font-medium text-slate-800 hover:text-amber-500 hover:font-bold transition-all no-underline"
       >
-        👤 {user.name || user.email}
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover shrink-0" />
+        ) : (
+          <span className="w-7 h-7 rounded-full bg-yellow-100 text-yellow-800 flex items-center justify-center text-xs font-bold shrink-0">
+            {(user.name || user.email || "?").charAt(0).toUpperCase()}
+          </span>
+        )}
+        {user.name || user.email}
       </Link>
       <button
         onClick={handleLogout}

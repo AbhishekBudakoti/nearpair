@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import apiClient from "../api/client";
 import MatchCard from "../components/MatchCard";
 import PartnersMap from "../components/PartnersMap";
+import PageBanner from "../components/PageBanner";
 
 const DAYS = [
   "",
@@ -279,12 +280,11 @@ const Discover = () => {
 
   return (
     <div className="max-w-5xl mx-auto px-4 my-6">
-      <h1 className="text-2xl font-bold text-slate-900 mb-1">Discover partners</h1>
-      <p className="text-sm text-slate-600 mb-5">
+      <PageBanner image="/discover-partner.webp" title="Discover partners">
         Ranked by a weighted match score across activity, location,
         availability, skill level, and rating.
         {personalized && " Also factoring in what's worked well for you before."}
-      </p>
+      </PageBanner>
 
       <form
         onSubmit={runSearch}

@@ -45,6 +45,10 @@ const TILES = [
 // Candid meetup photos for the "Real people" marquee section.
 const MOMENTS = [
   { image: "/running.webp", tag: "Running", caption: "Morning park run & jog" },
+  { image: "/caroke.webp", tag: "Karaoke", caption: "Late night karaoke & music jam" },
+  { image: "/sketing.webp", tag: "Skating", caption: "Roller skating & park fun" },
+  { image: "/rides.webp", tag: "Amusement Rides", caption: "Theme park roller coaster ride" },
+  { image: "/activity.webp", tag: "Outdoors", caption: "Group outdoor adventure" },
   { image: "/football.webp", tag: "Football", caption: "Evening turf football match" },
   { image: "/bowling.webp", tag: "Bowling", caption: "Strike night at the alley" },
   { image: "/guitar.webp", tag: "Music", caption: "Acoustic guitar & song jam" },

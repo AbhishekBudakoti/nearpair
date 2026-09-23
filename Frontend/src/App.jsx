@@ -16,6 +16,7 @@ import Discover from "./pages/Discover";
 import Requests from "./pages/Requests";
 import Sessions from "./pages/Sessions";
 import ActivityHistory from "./pages/ActivityHistory";
+import ChatList from "./pages/ChatList";
 import Chat from "./pages/Chat";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
@@ -49,6 +50,7 @@ function App() {
             <Route path="/requests" element={<Requests />} />
             <Route path="/sessions" element={<Sessions />} />
             <Route path="/history" element={<ActivityHistory />} />
+            <Route path="/chat" element={<ChatList />} />
             <Route path="/chat/:userId" element={<Chat />} />
 
             <Route element={<AdminRoute />}>
