@@ -115,9 +115,9 @@ const Layout = () => {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <header className="bg-white border-b border-slate-200 shadow-xs sticky top-0 z-50">
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3 gap-4">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 gap-2 sm:gap-4">
           {/* Left section: Mobile menu toggle + Logo */}
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
             {user && (
               <button
                 type="button"
@@ -130,8 +130,8 @@ const Layout = () => {
               </button>
             )}
 
-            <Link to="/" className="flex items-center no-underline shrink-0">
-              <img src="/logo.webp" alt="NearPair" className="h-10 sm:h-12 w-auto shrink-0 hover:opacity-90 transition-opacity" />
+            <Link to="/" className="flex items-center no-underline shrink-0 min-w-0">
+              <img src="/logo.webp" alt="NearPair" className="h-8 sm:h-12 w-auto max-w-[45vw] sm:max-w-none shrink-0 hover:opacity-90 transition-opacity" />
             </Link>
           </div>
 
