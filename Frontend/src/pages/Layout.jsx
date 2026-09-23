@@ -166,13 +166,29 @@ const Layout = () => {
           </div>
         </div>
 
+        {/* Mobile Dropdown Navigation Menu */}
         {user && menuOpen && (
-          <nav className="sm:hidden flex flex-col gap-1 px-4 pb-3 pt-1 border-t border-slate-100">
+          <nav className="sm:hidden flex flex-col gap-1 px-4 pb-4 pt-2 border-t border-slate-100 bg-white animate-in slide-in-from-top duration-200">
+            {/* User header inside mobile drawer */}
+            <div className="flex items-center gap-3 p-3 mb-2 rounded-xl bg-slate-50 border border-slate-100">
+              <span className="w-9 h-9 rounded-full bg-yellow-400 text-neutral-950 flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs">
+                {(user.name || user.email || "?").charAt(0).toUpperCase()}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-slate-900 m-0 truncate">{user.name || "User"}</p>
+                <p className="text-xs text-slate-500 m-0 truncate">{user.email}</p>
+              </div>
+              <span
+                className={`w-2.5 h-2.5 rounded-full ${connected ? "bg-emerald-500" : "bg-slate-300"}`}
+                title={connected ? "Connected" : "Disconnected"}
+              />
+            </div>
+
             {navItems.map((item) =>
               item.children ? (
                 <div key={item.label} className="mt-1">
-                  <div className="px-3 pt-2 pb-1 text-xs font-bold uppercase tracking-wide text-slate-400">
-                    {item.label}
+                  <div className="px-3 pt-2 pb-1 text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                    <span>⚡</span> {item.label}
                   </div>
                   {item.children.map((child) => (
                     <NavLink
@@ -181,7 +197,10 @@ const Layout = () => {
                       className={({ isActive }) => `flex items-center justify-between ml-2 ${mobileNavLinkClass({ isActive })}`}
                       onClick={() => setMenuOpen(false)}
                     >
-                      {child.label}
+                      <span>
+                        {child.to === "/requests" ? "📩 " : child.to === "/sessions" ? "📅 " : "📜 "}
+                        {child.label}
+                      </span>
                       {child.to === "/requests" && (
                         <RequestBadge count={pendingRequestCount} className="min-w-[18px] h-[18px] px-1 text-[11px]" />
                       )}
@@ -196,7 +215,10 @@ const Layout = () => {
                   className={({ isActive }) => `flex items-center justify-between ${mobileNavLinkClass({ isActive })}`}
                   onClick={() => setMenuOpen(false)}
                 >
-                  {item.label}
+                  <span>
+                    {item.to === "/" ? "🏠 " : item.to === "/discover" ? "🔍 " : item.to === "/chat" ? "💬 " : item.to === "/profile" ? "👤 " : "⚙️ "}
+                    {item.label}
+                  </span>
                 </NavLink>
               )
             )}
@@ -204,9 +226,83 @@ const Layout = () => {
         )}
       </header>
 
-      <main className="pb-10 flex-1">
+      <main className="pb-20 sm:pb-10 flex-1">
         <Outlet />
       </main>
+
+      {/* Mobile Bottom Navigation Bar for logged-in users */}
+      {user && (
+        <nav
+          aria-label="Mobile Bottom Navigation"
+          className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 py-1.5 px-3 flex justify-around items-center shadow-lg sm:hidden"
+        >
+          <NavLink
+            to="/"
+            end
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center text-[10px] font-semibold transition-colors no-underline ${
+                isActive ? "text-yellow-600 font-bold" : "text-slate-500 hover:text-slate-800"
+              }`
+            }
+          >
+            <span className="text-base leading-none">🏠</span>
+            <span className="mt-1">Home</span>
+          </NavLink>
+
+          <NavLink
+            to="/discover"
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center text-[10px] font-semibold transition-colors no-underline ${
+                isActive ? "text-yellow-600 font-bold" : "text-slate-500 hover:text-slate-800"
+              }`
+            }
+          >
+            <span className="text-base leading-none">🔍</span>
+            <span className="mt-1">Discover</span>
+          </NavLink>
+
+          <NavLink
+            to="/chat"
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center text-[10px] font-semibold transition-colors no-underline ${
+                isActive ? "text-yellow-600 font-bold" : "text-slate-500 hover:text-slate-800"
+              }`
+            }
+          >
+            <span className="text-base leading-none">💬</span>
+            <span className="mt-1">Chat</span>
+          </NavLink>
+
+          <NavLink
+            to="/requests"
+            className={({ isActive }) =>
+              `relative flex flex-col items-center justify-center text-[10px] font-semibold transition-colors no-underline ${
+                isActive ? "text-yellow-600 font-bold" : "text-slate-500 hover:text-slate-800"
+              }`
+            }
+          >
+            <span className="text-base leading-none">📩</span>
+            <span className="mt-1">Requests</span>
+            {pendingRequestCount > 0 && (
+              <span className="absolute -top-1 right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[9px] font-bold flex items-center justify-center">
+                {pendingRequestCount > 9 ? "9+" : pendingRequestCount}
+              </span>
+            )}
+          </NavLink>
+
+          <NavLink
+            to="/profile"
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center text-[10px] font-semibold transition-colors no-underline ${
+                isActive ? "text-yellow-600 font-bold" : "text-slate-500 hover:text-slate-800"
+              }`
+            }
+          >
+            <span className="text-base leading-none">👤</span>
+            <span className="mt-1">Profile</span>
+          </NavLink>
+        </nav>
+      )}
 
       <Footer />
     </div>

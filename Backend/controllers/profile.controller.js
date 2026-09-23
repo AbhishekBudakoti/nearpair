@@ -157,9 +157,43 @@ const getCities = async (req, res) => {
   return successResponse(res, { cities }, "Cities fetched successfully");
 };
 
+const getUserProfile = async (req, res) => {
+  const { userId } = req.params;
+  const profile = await Profile.findOne({ user: userId })
+    .populate("user", "name email role createdAt")
+    .populate("skills.activity");
+
+  if (!profile) {
+    const User = require("../models/user.model");
+    const user = await User.findById(userId).select("name email role createdAt");
+    if (!user) {
+      const error = new Error("User not found");
+      error.statusCode = 404;
+      throw error;
+    }
+    return successResponse(
+      res,
+      {
+        profile: {
+          user,
+          avatar: "",
+          bio: "No bio provided yet.",
+          skills: [],
+          location: { city: "Not specified" },
+          availability: [],
+        },
+      },
+      "User profile fetched successfully"
+    );
+  }
+
+  return successResponse(res, { profile }, "User profile fetched successfully");
+};
+
 module.exports = {
   createProfile,
   getMyProfile,
   updateMyProfile,
   getCities,
+  getUserProfile,
 };

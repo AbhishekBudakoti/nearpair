@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import OnlineStatus from "./OnlineStatus";
 import UserActionsMenu from "./UserActionsMenu";
+import UserProfileModal from "./UserProfileModal";
 
 // matchQuality -> Tailwind badge classes
 const QUALITY_STYLE = {
@@ -10,10 +12,7 @@ const QUALITY_STYLE = {
   "Low match": "bg-red-600 text-white",
 };
 
-// Mirrors MATCH_WEIGHT in Backend/services/matching.service.js. "history"
-// applies based on the searcher's own session history (the `personalized`
-// flag from GET /matches), not a search filter, so it takes the response
-// itself rather than the filter object.
+// Mirrors MATCH_WEIGHT in Backend/services/matching.service.js.
 const BREAKDOWN_CATEGORIES = [
   { key: "activity", label: "Activity", max: 30, appliesWhen: (f) => !!f.activity },
   { key: "location", label: "Location", max: 20, appliesWhen: (f) => !!f.city || !!f.radiusKm },
@@ -59,19 +58,15 @@ const Meter = ({ label, value, max, applicable, hint }) => {
   );
 };
 
-/**
- * A single ranked-match result: identity, the overall score as a hero figure
- * + status-colored quality chip, and a per-category breakdown of how that
- * score was earned (mirrors the backend's weighted match algorithm 1:1).
- */
 const MatchCard = ({ rank, profile, matchScore, matchQuality, matchBreakdown, distanceKm, appliedFilters, personalized, requestState, onSendRequest, onBlocked }) => {
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showAnalysis, setShowAnalysis] = useState(false);
+
   const qualityClass = QUALITY_STYLE[matchQuality] || "bg-slate-200 text-slate-900";
   const name = profile.user?.name || profile.user?.email || "Unknown";
   const initial = name.charAt(0).toUpperCase();
   const userId = profile.user?._id;
   const dist = distanceKm ?? profile.location?.distanceKm;
-  // A strong showing on the personalized "history" category is worth
-  // surfacing outside the collapsed breakdown, not just as a meter row.
   const historyRatio = personalized ? (matchBreakdown?.history || 0) / 15 : 0;
   const showHistoryBadge = historyRatio >= 0.67;
 
@@ -84,23 +79,37 @@ const MatchCard = ({ rank, profile, matchScore, matchQuality, matchBreakdown, di
       )}
 
       <div className="flex gap-3.5 items-start">
-        {profile.avatar ? (
-          <img src={profile.avatar} alt="" className="w-11 h-11 rounded-full object-cover shrink-0" />
-        ) : (
-          <div className="w-11 h-11 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-base shrink-0">
-            {initial}
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={() => setShowProfileModal(true)}
+          className="shrink-0 p-0 border-0 bg-transparent cursor-pointer group focus:outline-none"
+          title="Click to view profile"
+        >
+          {profile.avatar ? (
+            <img src={profile.avatar} alt={name} className="w-11 h-11 rounded-full object-cover group-hover:ring-2 group-hover:ring-yellow-400 transition-all" />
+          ) : (
+            <div className="w-11 h-11 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-base group-hover:bg-yellow-100 group-hover:text-yellow-900 transition-all">
+              {initial}
+            </div>
+          )}
+        </button>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="font-semibold text-sm text-slate-900">{name}</span>
+            <button
+              type="button"
+              onClick={() => setShowProfileModal(true)}
+              className="font-semibold text-sm text-slate-900 hover:text-amber-600 hover:underline cursor-pointer bg-transparent border-0 p-0 text-left"
+              title="Click to view profile"
+            >
+              {name}
+            </button>
             {showHistoryBadge && (
               <span
                 title="Similar to activities you've completed and rated well"
                 className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-100 text-violet-700"
               >
-                ✨ Recommended for you
+                ✨ Recommended
               </span>
             )}
           </div>
@@ -128,9 +137,39 @@ const MatchCard = ({ rank, profile, matchScore, matchQuality, matchBreakdown, di
       </div>
 
       <div className="mt-4 pt-3.5 border-t border-slate-200">
-        <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-          Match breakdown
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            Match breakdown
+          </span>
+          <button
+            type="button"
+            onClick={() => setShowAnalysis((prev) => !prev)}
+            className="text-[11px] font-bold text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded-md transition-colors cursor-pointer border border-amber-200"
+          >
+            {showAnalysis ? "Hide Analysis ▲" : "⚡ Analyse Match ▼"}
+          </button>
         </div>
+
+        {showAnalysis && (
+          <div className="mb-3 p-3 bg-amber-50/70 border border-amber-200/80 rounded-xl text-xs text-amber-950 space-y-1.5 animate-in fade-in duration-150">
+            <p className="font-bold m-0 text-amber-900">📊 Compatibility Insight for {name}:</p>
+            <ul className="m-0 pl-4 space-y-1 list-disc text-amber-800">
+              <li>
+                <strong>Activity Alignment:</strong> {matchBreakdown?.activity || 0}/30 score weight.
+              </li>
+              <li>
+                <strong>Proximity Factor:</strong> {dist !== undefined ? `${dist} km distance` : "Location matching"} ({matchBreakdown?.location || 0}/20 pts).
+              </li>
+              <li>
+                <strong>Schedule Fit:</strong> {matchBreakdown?.availability || 0}/25 points for availability overlap.
+              </li>
+              <li>
+                <strong>Overall Quality:</strong> Rated as <strong>{matchQuality}</strong> ({matchScore}% fit).
+              </li>
+            </ul>
+          </div>
+        )}
+
         {BREAKDOWN_CATEGORIES.map((cat) => (
           <Meter
             key={cat.key}
@@ -151,6 +190,13 @@ const MatchCard = ({ rank, profile, matchScore, matchQuality, matchBreakdown, di
         <div className="mr-auto">
           <UserActionsMenu userId={userId} userName={name} onBlocked={onBlocked} />
         </div>
+        <button
+          type="button"
+          onClick={() => setShowProfileModal(true)}
+          className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer"
+        >
+          👤 Profile
+        </button>
         <Link
           to={`/chat/${userId}?name=${encodeURIComponent(name)}`}
           className="px-3.5 py-1.5 text-xs font-semibold text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors no-underline"
@@ -175,6 +221,15 @@ const MatchCard = ({ rank, profile, matchScore, matchQuality, matchBreakdown, di
 
       {requestState && !["sending", "sent"].includes(requestState) && (
         <div className="mt-1.5 text-right text-xs text-red-600">{requestState}</div>
+      )}
+
+      {showProfileModal && (
+        <UserProfileModal
+          userId={userId}
+          userName={name}
+          initialProfile={profile}
+          onClose={() => setShowProfileModal(false)}
+        />
       )}
     </div>
   );

@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useSocket } from "../context/SocketContext";
 import apiClient from "../api/client";
-import UserActionsMenu from "./UserActionsMenu";
+import UserProfileModal from "./UserProfileModal";
 
 const ChatWindow = ({ userId, userName }) => {
+    const [showProfileModal, setShowProfileModal] = useState(false);
     const {
         chatMessages,
         sendMessage,
@@ -213,7 +214,26 @@ const ChatWindow = ({ userId, userName }) => {
                 }}
             >
                 <div>
-                    <strong>{userName || "Chat"}</strong>
+                    <button
+                        type="button"
+                        onClick={() => setShowProfileModal(true)}
+                        style={{
+                            background: "none",
+                            border: "none",
+                            padding: 0,
+                            margin: 0,
+                            font: "inherit",
+                            cursor: "pointer",
+                            textAlign: "left",
+                        }}
+                        className="hover:underline hover:text-amber-600 transition-colors"
+                        title="Click to view user profile"
+                    >
+                        <strong>{userName || "Chat"}</strong>
+                        <span style={{ fontSize: "11px", color: "#2563eb", marginLeft: "6px", fontWeight: "normal" }}>
+                            👤 View Profile
+                        </span>
+                    </button>
 
                     <div>
                         <small>
@@ -229,6 +249,14 @@ const ChatWindow = ({ userId, userName }) => {
                     userName={userName}
                     onBlocked={() => setCanMessage(false)}
                 />
+
+                {showProfileModal && (
+                    <UserProfileModal
+                        userId={userId}
+                        userName={userName}
+                        onClose={() => setShowProfileModal(false)}
+                    />
+                )}
             </div>
 
             {messagingLocked && (
