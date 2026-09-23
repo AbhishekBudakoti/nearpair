@@ -145,7 +145,16 @@ const login=async(req,res)=>{
         const error=new Error("Invalid Username and Password")
         error.statusCode=400;
         throw error;
-        
+
+    }
+
+    // A Google-only account (googleId set, no password ever chosen) can't be
+    // compared against with bcrypt — bcrypt.compare throws on a missing hash
+    // instead of just returning false, so this must be checked first.
+    if (!user.password) {
+        const error = new Error("This account signs in with Google — use \"Continue with Google\" instead");
+        error.statusCode = 400;
+        throw error;
     }
 
     const isPasswordValid = await bcrypt.compare(password,user.password)

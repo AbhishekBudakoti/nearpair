@@ -35,7 +35,7 @@ const FLOATING_ICONS = [
 // Collage tiles: real activity photos, cropped to fixed heights via object-cover.
 const TILES = [
   { image: "/badmintion.webp", label: "Badminton", h: "h-40" },
-  { image: "/running.webp", label: "Running", h: "h-56" },
+  { image: "/cricket.webp", label: "Cricket", h: "h-56" },
   { image: "/gamming.webp", label: "Gaming", h: "h-48" },
   { image: "/studies.webp", label: "Study buddies", h: "h-56" },
   { image: "/gym.webp", label: "Gym", h: "h-40" },
@@ -44,7 +44,7 @@ const TILES = [
 
 // Candid meetup photos for the "Real people" marquee section.
 const MOMENTS = [
-  { image: "/cricket.webp", tag: "Cricket", caption: "Weekend Gully Cricket Match" },
+  { image: "/running.webp", tag: "Running", caption: "Morning park run & jog" },
   { image: "/football.webp", tag: "Football", caption: "Evening turf football match" },
   { image: "/bowling.webp", tag: "Bowling", caption: "Strike night at the alley" },
   { image: "/guitar.webp", tag: "Music", caption: "Acoustic guitar & song jam" },
