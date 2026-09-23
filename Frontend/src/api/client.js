@@ -8,11 +8,14 @@ import axios from "axios";
 export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 /**
- * Origin the backend (and its Socket.io server) is served from, derived by
- * stripping the trailing "/api" from API_URL. Used for the Socket.io client,
- * which connects to the server root rather than an API path.
+ * Origin the backend's Socket.io server is served from. Prefers an explicit
+ * VITE_SOCKET_URL — needed once VITE_API_URL points at a same-origin proxy
+ * path like "/api" (see Frontend/vercel.json's rewrite, added to work around
+ * iOS Safari/WebKit blocking the cross-site auth cookie) rather than the
+ * backend's real origin. Falls back to deriving it from API_URL, which is
+ * all local dev needs since API_URL there is still the backend's real origin.
  */
-export const SOCKET_URL = API_URL.replace(/\/api\/?$/, "");
+export const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || API_URL.replace(/\/api\/?$/, "");
 
 /**
  * Event fired on `window` when the backend reports the account is suspended.
