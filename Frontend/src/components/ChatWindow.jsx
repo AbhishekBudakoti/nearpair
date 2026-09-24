@@ -285,9 +285,6 @@ const ChatWindow = ({ userId, userName }) => {
                             title="Click to view user profile"
                         >
                             <strong>{userName || "Chat"}</strong>
-                            <span style={{ fontSize: "11px", color: "#2563eb", marginLeft: "6px", fontWeight: "normal" }}>
-                                👤 View Profile
-                            </span>
                         </button>
 
                         <div>

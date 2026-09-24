@@ -87,7 +87,7 @@ const UserActionsMenu = ({ userId, userName, sessionId, onBlocked }) => {
       {menuOpen && (
         <div
           role="menu"
-          className="absolute left-0 top-full mt-1 z-20 w-36 bg-white border border-slate-200 rounded-xl shadow-lg py-1"
+          className="absolute right-0 top-full mt-1 z-20 w-36 bg-white border border-slate-200 rounded-xl shadow-lg py-1"
         >
           <button
             type="button"
