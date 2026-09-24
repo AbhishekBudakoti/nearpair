@@ -50,6 +50,12 @@ const Safety = () => {
           guarantee what happens when two people meet up. Here's how we help,
           and what's on you.
         </p>
+
+        <img
+          src="/meet-safe.jpg"
+          alt="Meeting a partner safely in public"
+          className="mt-10 w-full max-w-2xl mx-auto h-64 sm:h-80 object-cover rounded-2xl"
+        />
       </section>
 
       {/* BEFORE YOU MEET */}

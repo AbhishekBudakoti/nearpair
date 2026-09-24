@@ -55,6 +55,12 @@ const About = () => {
           a dozen back-and-forth messages first. So we built a matcher for that,
           not another feed to scroll.
         </p>
+
+        <img
+          src="/about.jpg"
+          alt="Partners meeting up through NearPair"
+          className="mt-10 w-full max-w-2xl mx-auto h-64 sm:h-80 object-cover rounded-2xl"
+        />
       </section>
 
       {/* HOW IT WORKS */}
