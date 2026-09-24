@@ -34,33 +34,32 @@ const About = () => {
   return (
     <div className="bg-white text-neutral-900">
       {/* HERO */}
-      <section className="max-w-3xl mx-auto px-5 pt-14 pb-16 text-center">
-        <span className="inline-flex items-center gap-2 rounded-xl border-2 border-dashed border-yellow-400 bg-yellow-50 px-4 py-2 text-xs font-bold tracking-widest text-yellow-700 uppercase font-mono">
-          About NearPair
-        </span>
+      <section className="relative overflow-hidden px-5 py-24 sm:py-32 text-center">
+        <img src="/about.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/80" />
 
-        <h1
-          className="mt-6 m-0 uppercase leading-[0.95] tracking-tight text-5xl sm:text-6xl"
-          style={{ fontFamily: "'Anton', Impact, 'Arial Narrow', sans-serif", fontWeight: 400 }}
-        >
-          Never go
-          <span className="inline-block -rotate-1 bg-yellow-400 text-neutral-950 px-3 my-1 mx-1 rounded-md">
-            solo.
+        <div className="relative max-w-3xl mx-auto">
+          <span className="inline-flex items-center gap-2 rounded-xl border-2 border-dashed border-yellow-400 bg-yellow-400/10 backdrop-blur-sm px-4 py-2 text-xs font-bold tracking-widest text-yellow-400 uppercase font-mono">
+            About NearPair
           </span>
-        </h1>
 
-        <p className="mt-6 text-base sm:text-lg text-neutral-600 max-w-xl mx-auto">
-          NearPair exists for one simple reason: it's hard to find people nearby who
-          actually want to do the same thing you do, at a time that works, without
-          a dozen back-and-forth messages first. So we built a matcher for that,
-          not another feed to scroll.
-        </p>
+          <h1
+            className="mt-6 m-0 uppercase leading-[0.95] tracking-tight text-5xl sm:text-6xl text-white"
+            style={{ fontFamily: "'Anton', Impact, 'Arial Narrow', sans-serif", fontWeight: 400 }}
+          >
+            Never go
+            <span className="inline-block -rotate-1 bg-yellow-400 text-neutral-950 px-3 my-1 mx-1 rounded-md">
+              solo.
+            </span>
+          </h1>
 
-        <img
-          src="/about.jpg"
-          alt="Partners meeting up through NearPair"
-          className="mt-10 w-full max-w-2xl mx-auto h-64 sm:h-80 object-cover rounded-2xl"
-        />
+          <p className="mt-6 text-base sm:text-lg text-neutral-200 max-w-xl mx-auto">
+            NearPair exists for one simple reason: it's hard to find people nearby who
+            actually want to do the same thing you do, at a time that works, without
+            a dozen back-and-forth messages first. So we built a matcher for that,
+            not another feed to scroll.
+          </p>
+        </div>
       </section>
 
       {/* HOW IT WORKS */}

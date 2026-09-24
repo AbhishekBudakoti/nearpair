@@ -34,28 +34,27 @@ const Safety = () => {
   return (
     <div className="bg-white text-neutral-900">
       {/* HERO */}
-      <section className="max-w-3xl mx-auto px-5 pt-14 pb-16 text-center">
-        <span className="inline-flex items-center gap-2 rounded-xl border-2 border-dashed border-yellow-400 bg-yellow-50 px-4 py-2 text-xs font-bold tracking-widest text-yellow-700 uppercase font-mono">
-          Safety &amp; Trust
-        </span>
-        <h1
-          className="mt-6 m-0 uppercase leading-[0.95] tracking-tight text-5xl sm:text-6xl"
-          style={{ fontFamily: "'Anton', Impact, 'Arial Narrow', sans-serif", fontWeight: 400 }}
-        >
-          Meet smart.
-          <span className="block">Meet safe.</span>
-        </h1>
-        <p className="mt-6 text-base sm:text-lg text-neutral-600 max-w-xl mx-auto">
-          NearPair gives you tools to match and message safely, but no app can
-          guarantee what happens when two people meet up. Here's how we help,
-          and what's on you.
-        </p>
+      <section className="relative overflow-hidden px-5 py-24 sm:py-32 text-center">
+        <img src="/meet-safe.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/80" />
 
-        <img
-          src="/meet-safe.jpg"
-          alt="Meeting a partner safely in public"
-          className="mt-10 w-full max-w-2xl mx-auto h-64 sm:h-80 object-cover rounded-2xl"
-        />
+        <div className="relative max-w-3xl mx-auto">
+          <span className="inline-flex items-center gap-2 rounded-xl border-2 border-dashed border-yellow-400 bg-yellow-400/10 backdrop-blur-sm px-4 py-2 text-xs font-bold tracking-widest text-yellow-400 uppercase font-mono">
+            Safety &amp; Trust
+          </span>
+          <h1
+            className="mt-6 m-0 uppercase leading-[0.95] tracking-tight text-5xl sm:text-6xl text-white"
+            style={{ fontFamily: "'Anton', Impact, 'Arial Narrow', sans-serif", fontWeight: 400 }}
+          >
+            Meet smart.
+            <span className="block">Meet safe.</span>
+          </h1>
+          <p className="mt-6 text-base sm:text-lg text-neutral-200 max-w-xl mx-auto">
+            NearPair gives you tools to match and message safely, but no app can
+            guarantee what happens when two people meet up. Here's how we help,
+            and what's on you.
+          </p>
+        </div>
       </section>
 
       {/* BEFORE YOU MEET */}
