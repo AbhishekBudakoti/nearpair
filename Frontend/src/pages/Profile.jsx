@@ -337,24 +337,11 @@ const Profile = () => {
 
           return (
             <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-300/80 shadow-xs">
-              <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-base">⚡</span>
-                  <span className="text-xs font-extrabold uppercase tracking-wider text-amber-900 font-mono">
-                    Profile Optimisation Score: {score}%
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!city) handleGetLocation();
-                    if (selectedDays.length === 0) setSelectedDays(DAY_PRESETS[0].days);
-                    setStatusMsg("✨ Profile auto-optimised with suggested defaults! Save changes below.");
-                  }}
-                  className="px-3 py-1 text-xs font-bold text-neutral-950 bg-yellow-400 rounded-lg hover:bg-yellow-300 transition-colors cursor-pointer border border-yellow-500/40 shadow-2xs"
-                >
-                  ⚡ Auto-Optimise Profile
-                </button>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-base">⚡</span>
+                <span className="text-xs font-extrabold uppercase tracking-wider text-amber-900 font-mono">
+                  Profile Optimisation Score: {score}%
+                </span>
               </div>
               <div className="w-full h-2 rounded-full bg-yellow-200/80 overflow-hidden mb-2">
                 <div

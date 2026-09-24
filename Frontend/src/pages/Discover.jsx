@@ -269,26 +269,6 @@ const Discover = () => {
     setFilters(emptyFilters);
   };
 
-  const handleOptimiseFilters = async () => {
-    setLoading(true);
-    try {
-      const { data } = await apiClient.get("/profile/me");
-      const userProfile = data.data?.profile;
-      const userCity = userProfile?.location?.city || userProfileCity || "";
-      const firstSkillId = userProfile?.skills?.[0]?.activity?._id || userProfile?.skills?.[0]?.activity || "";
-
-      const optimised = {
-        ...emptyFilters,
-        city: userCity,
-        activity: firstSkillId || activityOptions[0]?._id || "",
-      };
-      setFilters(optimised);
-      runSearch(null, optimised);
-    } catch {
-      runSearch();
-    }
-  };
-
   const hasActiveFilters = Object.values(filters).some(Boolean);
 
   const activitiesByCategory = categoryOptions
@@ -433,15 +413,6 @@ const Discover = () => {
           className="w-full sm:w-auto px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 cursor-pointer"
         >
           Search
-        </button>
-
-        <button
-          type="button"
-          onClick={handleOptimiseFilters}
-          className="w-full sm:w-auto px-4 py-2 text-sm font-bold text-neutral-950 bg-yellow-400 rounded-lg hover:bg-yellow-300 transition-colors cursor-pointer flex items-center justify-center gap-1 shadow-xs"
-          title="Auto-fill filters based on your profile skills & location"
-        >
-          ⚡ Optimise Search
         </button>
 
         {hasActiveFilters && (
