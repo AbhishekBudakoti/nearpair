@@ -58,7 +58,7 @@ const Safety = () => {
       </section>
 
       {/* BEFORE YOU MEET */}
-      <section className="max-w-6xl mx-auto px-5 pb-16 sm:pb-24">
+      <section className="max-w-6xl mx-auto px-5 pt-16 pb-16 sm:pt-24 sm:pb-24">
         <h2
           className="m-0 mb-8 uppercase leading-[0.95] tracking-tight text-2xl sm:text-3xl"
           style={{ fontFamily: "'Anton', Impact, 'Arial Narrow', sans-serif", fontWeight: 400 }}
