@@ -22,6 +22,9 @@ const ChatWindow = ({ userId, userName }) => {
     const [authError, setAuthError] = useState(false);
     // From GET /chat/:userId — false when there's no active match or a block exists.
     const [canMessage, setCanMessage] = useState(true);
+    // The other person's profile (avatar, etc.) — also handed to UserProfileModal
+    // as initialProfile so it doesn't have to re-fetch the same thing.
+    const [partnerProfile, setPartnerProfile] = useState(null);
 
     const messagesEndRef = useRef(null);
     const typingTimeoutRef = useRef(null);
@@ -66,6 +69,25 @@ const ChatWindow = ({ userId, userName }) => {
         if (userId) {
             fetchChatHistory();
         }
+    }, [userId]);
+
+    // Fetch the other person's avatar/profile for the header.
+    useEffect(() => {
+        if (!userId) return;
+
+        let mounted = true;
+        apiClient
+            .get(`/profile/user/${userId}`)
+            .then(({ data }) => {
+                if (mounted) setPartnerProfile(data.data?.profile || null);
+            })
+            .catch(() => {
+                if (mounted) setPartnerProfile(null);
+            });
+
+        return () => {
+            mounted = false;
+        };
     }, [userId]);
 
     // Add new real-time messages
@@ -214,34 +236,67 @@ const ChatWindow = ({ userId, userName }) => {
                     gap: "8px",
                 }}
             >
-                <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
                     <button
                         type="button"
                         onClick={() => setShowProfileModal(true)}
-                        style={{
-                            background: "none",
-                            border: "none",
-                            padding: 0,
-                            margin: 0,
-                            font: "inherit",
-                            cursor: "pointer",
-                            textAlign: "left",
-                        }}
-                        className="hover:underline hover:text-amber-600 transition-colors"
+                        style={{ background: "none", border: "none", padding: 0, margin: 0, cursor: "pointer", flexShrink: 0 }}
                         title="Click to view user profile"
                     >
-                        <strong>{userName || "Chat"}</strong>
-                        <span style={{ fontSize: "11px", color: "#2563eb", marginLeft: "6px", fontWeight: "normal" }}>
-                            👤 View Profile
-                        </span>
+                        {partnerProfile?.avatar ? (
+                            <img
+                                src={partnerProfile.avatar}
+                                alt=""
+                                style={{ width: "40px", height: "40px", borderRadius: "50%", objectFit: "cover", display: "block" }}
+                            />
+                        ) : (
+                            <div
+                                style={{
+                                    width: "40px",
+                                    height: "40px",
+                                    borderRadius: "50%",
+                                    background: "#facc15",
+                                    color: "#0a0a0a",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    fontWeight: "bold",
+                                }}
+                            >
+                                {(userName || "?").charAt(0).toUpperCase()}
+                            </div>
+                        )}
                     </button>
 
-                    <div>
-                        <small>
-                            {connected
-                                ? "Online connection"
-                                : "Disconnected"}
-                        </small>
+                    <div style={{ minWidth: 0 }}>
+                        <button
+                            type="button"
+                            onClick={() => setShowProfileModal(true)}
+                            style={{
+                                background: "none",
+                                border: "none",
+                                padding: 0,
+                                margin: 0,
+                                font: "inherit",
+                                cursor: "pointer",
+                                textAlign: "left",
+                            }}
+                            className="hover:underline hover:text-amber-600 transition-colors"
+                            title="Click to view user profile"
+                        >
+                            <strong>{userName || "Chat"}</strong>
+                            <span style={{ fontSize: "11px", color: "#2563eb", marginLeft: "6px", fontWeight: "normal" }}>
+                                👤 View Profile
+                            </span>
+                        </button>
+
+                        <div>
+                            <small>
+                                {connected
+                                    ? "Online connection"
+                                    : "Disconnected"}
+                            </small>
+                        </div>
                     </div>
                 </div>
 
@@ -255,6 +310,7 @@ const ChatWindow = ({ userId, userName }) => {
                     <UserProfileModal
                         userId={userId}
                         userName={userName}
+                        initialProfile={partnerProfile}
                         onClose={() => setShowProfileModal(false)}
                     />
                 )}
