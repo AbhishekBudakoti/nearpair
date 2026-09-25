@@ -1,4 +1,5 @@
 # NearPair — Frontend
+n[![CI](https://github.com/AbhishekBudakoti/nearpair/actions/workflows/ci.yml/badge.svg)](https://github.com/AbhishekBudakoti/nearpair/actions/workflows/ci.yml)
 
 React + Vite single-page app for **NearPair**, an app for finding and matching with local activity partners — sports, hobbies, study buddies, anything you'd rather not do alone. This folder is the client; it talks to the Express/MongoDB API in `../Backend`.
 
