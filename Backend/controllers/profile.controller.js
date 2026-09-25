@@ -1,6 +1,8 @@
 
 const Profile = require('../models/profile.model')
 const Activity = require('../models/activity.model')
+const User = require('../models/user.model')
+const { isBlockedBetween } = require('../services/block.service')
 
 const {successResponse}=require('../utils/response')
 const {buildLocation}=require('../utils/geo')
@@ -157,19 +159,30 @@ const getCities = async (req, res) => {
   return successResponse(res, { cities }, "Cities fetched successfully");
 };
 
+const userNotFound = () => {
+  const error = new Error("User not found");
+  error.statusCode = 404;
+  return error;
+};
+
+// Another user's public profile. Email is deliberately left out of the
+// populated fields, and a block in either direction answers 404 — the same
+// as a missing user — so a blocked user can't tell the account exists.
 const getUserProfile = async (req, res) => {
   const { userId } = req.params;
+
+  if (await isBlockedBetween(req.user.id, userId)) {
+    throw userNotFound();
+  }
+
   const profile = await Profile.findOne({ user: userId })
-    .populate("user", "name email role createdAt")
+    .populate("user", "name role createdAt")
     .populate("skills.activity");
 
   if (!profile) {
-    const User = require("../models/user.model");
-    const user = await User.findById(userId).select("name email role createdAt");
+    const user = await User.findById(userId).select("name role createdAt");
     if (!user) {
-      const error = new Error("User not found");
-      error.statusCode = 404;
-      throw error;
+      throw userNotFound();
     }
     return successResponse(
       res,
