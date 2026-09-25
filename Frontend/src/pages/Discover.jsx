@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import apiClient from "../api/client";
 import MatchCard from "../components/MatchCard";
-import PartnersMap from "../components/PartnersMap";
+import PageLoader from "../components/PageLoader";
 import PageBanner from "../components/PageBanner";
+
+// Leaflet is only needed once someone switches to map view.
+const PartnersMap = lazy(() => import("../components/PartnersMap"));
 
 const DAYS = [
   "",
@@ -460,7 +463,9 @@ const Discover = () => {
       )}
 
       {viewMode === "map" ? (
-        <PartnersMap matches={matches || []} />
+        <Suspense fallback={<PageLoader />}>
+          <PartnersMap matches={matches || []} />
+        </Suspense>
       ) : loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (

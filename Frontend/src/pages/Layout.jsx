@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import AuthBar from "../components/AuthBar";
 import Footer from "../components/Footer";
+import PageLoader from "../components/PageLoader";
 import NotificationPanel from "../components/NotificationPanel";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
@@ -227,7 +228,9 @@ const Layout = () => {
       </header>
 
       <main className="pb-20 sm:pb-10 flex-1">
-        <Outlet />
+        <Suspense fallback={<PageLoader />}>
+          <Outlet />
+        </Suspense>
       </main>
 
       {/* Mobile Bottom Navigation Bar for logged-in users */}

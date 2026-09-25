@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { NavLink, Outlet } from "react-router-dom";
+import PageLoader from "../../components/PageLoader";
 
 const TABS = [
   { to: "/admin/overview", label: "Overview" },
@@ -32,7 +34,10 @@ const AdminLayout = () => {
         ))}
       </nav>
 
-      <Outlet />
+      {/* Own boundary so the admin tabs stay visible while a tab loads. */}
+      <Suspense fallback={<PageLoader />}>
+        <Outlet />
+      </Suspense>
     </div>
   );
 };

@@ -1,32 +1,37 @@
+import { lazy } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import Layout from "./pages/Layout";
 import Landing from "./pages/Landing";
-import About from "./pages/About";
-import Contact from "./pages/Contact";
-import Safety from "./pages/Safety";
-import Faq from "./pages/Faq";
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
-import Cookies from "./pages/Cookies";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Profile from "./pages/Profile";
-import Discover from "./pages/Discover";
-import Requests from "./pages/Requests";
-import Sessions from "./pages/Sessions";
-import ActivityHistory from "./pages/ActivityHistory";
-import ChatList from "./pages/ChatList";
-import Chat from "./pages/Chat";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
-import AdminLayout from "./pages/admin/AdminLayout";
-import AdminOverview from "./pages/admin/AdminOverview";
-import AdminReports from "./pages/AdminReports";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminActivities from "./pages/admin/AdminActivities";
-import AdminSessions from "./pages/admin/AdminSessions";
-import AdminReviews from "./pages/admin/AdminReviews";
+
+// Landing/Login/Register are where nearly every visit starts, so they ship in
+// the main bundle above. Every other page is its own chunk, fetched on first
+// visit while Layout's (or AdminLayout's) <Suspense> shows a spinner.
+const About = lazy(() => import("./pages/About"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Safety = lazy(() => import("./pages/Safety"));
+const Faq = lazy(() => import("./pages/Faq"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
+const Cookies = lazy(() => import("./pages/Cookies"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Discover = lazy(() => import("./pages/Discover"));
+const Requests = lazy(() => import("./pages/Requests"));
+const Sessions = lazy(() => import("./pages/Sessions"));
+const ActivityHistory = lazy(() => import("./pages/ActivityHistory"));
+const ChatList = lazy(() => import("./pages/ChatList"));
+const Chat = lazy(() => import("./pages/Chat"));
+const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
+const AdminOverview = lazy(() => import("./pages/admin/AdminOverview"));
+const AdminReports = lazy(() => import("./pages/AdminReports"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminActivities = lazy(() => import("./pages/admin/AdminActivities"));
+const AdminSessions = lazy(() => import("./pages/admin/AdminSessions"));
+const AdminReviews = lazy(() => import("./pages/admin/AdminReviews"));
 
 function App() {
   return (
