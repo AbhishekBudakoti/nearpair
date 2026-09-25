@@ -147,3 +147,133 @@ describe("Socket.IO chat", () => {
         socketB.close();
     });
 });
+
+// Production path: the socket connects straight to the backend origin, where
+// the (proxy-scoped) cookie never arrives, so it authenticates with a
+// short-lived token from GET /api/auth/socket-token instead.
+const getSocketToken = async (cookie) => {
+    const res = await request(app).get("/api/auth/socket-token").set("Cookie", cookie);
+    return res.body.data.token;
+};
+
+const connectWithToken = (token) =>
+    new Promise((resolve, reject) => {
+        const socket = Client(`http://localhost:${port}`, {
+            transports: ["websocket"],
+            auth: { token },
+            forceNew: true,
+        });
+        socket.on("connect", () => resolve(socket));
+        socket.on("connect_error", (err) => reject(err));
+    });
+
+const createActiveMatch = async (userAId, userBId) => {
+    const partnerRequest = await PartnerRequest.create({
+        sender: userAId,
+        recipient: userBId,
+        status: "accepted",
+        expireAt: new Date(Date.now() + 86400000),
+    });
+    return Match.create({ users: [userAId, userBId], request: partnerRequest._id, status: "active" });
+};
+
+describe("Socket.IO token auth (production path)", () => {
+    it("requires the session cookie to issue a socket token", async () => {
+        const res = await request(app).get("/api/auth/socket-token");
+        expect(res.status).toBe(401);
+    });
+
+    it("accepts a handshake carrying only a socket token, no cookie", async () => {
+        const { cookie } = await registerAndGetCookie("tokenauth@example.com");
+        const token = await getSocketToken(cookie);
+
+        expect(typeof token).toBe("string");
+
+        const socket = await connectWithToken(token);
+        expect(socket.connected).toBe(true);
+        socket.close();
+    });
+
+    it("rejects a handshake with a garbage socket token", async () => {
+        await expect(connectWithToken("not-a-real-jwt")).rejects.toThrow(/Invalid or expired token/);
+    });
+
+    it("delivers chat between two token-authenticated users", async () => {
+        const { cookie: cookieA, user: userA } = await registerAndGetCookie("tokchata@example.com");
+        const { cookie: cookieB, user: userB } = await registerAndGetCookie("tokchatb@example.com");
+        await createActiveMatch(userA.id, userB.id);
+
+        const socketA = await connectWithToken(await getSocketToken(cookieA));
+        const socketB = await connectWithToken(await getSocketToken(cookieB));
+
+        const received = new Promise((resolve) => socketB.on("chat:receive_message", resolve));
+        const acked = new Promise((resolve) => socketA.on("chat:message_sent", resolve));
+
+        socketA.emit("chat:send_message", { recipientId: userB.id, content: "Hi via token" });
+
+        const { message } = await received;
+        expect(message.content).toBe("Hi via token");
+        await acked;
+
+        socketA.close();
+        socketB.close();
+    });
+});
+
+describe("Socket.IO typing, presence and blocking", () => {
+    it("relays typing and stop_typing to a matched partner", async () => {
+        const { cookie: cookieA, user: userA } = await registerAndGetCookie("typinga@example.com");
+        const { cookie: cookieB, user: userB } = await registerAndGetCookie("typingb@example.com");
+        await createActiveMatch(userA.id, userB.id);
+
+        const socketA = await connectClient(cookieA);
+        const socketB = await connectClient(cookieB);
+
+        const typing = new Promise((resolve) => socketB.on("chat:typing", resolve));
+        socketA.emit("chat:typing", { recipientId: userB.id });
+        expect((await typing).userId).toBe(userA.id);
+
+        const stopped = new Promise((resolve) => socketB.on("chat:stop_typing", resolve));
+        socketA.emit("chat:stop_typing", { recipientId: userB.id });
+        expect((await stopped).userId).toBe(userA.id);
+
+        socketA.close();
+        socketB.close();
+    });
+
+    it("broadcasts presence:offline once a user's last socket disconnects", async () => {
+        const { cookie: cookieA } = await registerAndGetCookie("offlinea@example.com");
+        const { cookie: cookieB, user: userB } = await registerAndGetCookie("offlineb@example.com");
+
+        const socketA = await connectClient(cookieA);
+        const socketB = await connectClient(cookieB);
+
+        const offline = new Promise((resolve) => {
+            socketA.on("presence:offline", (data) => {
+                if (data.userId === userB.id) resolve(data);
+            });
+        });
+
+        socketB.close();
+
+        expect((await offline).userId).toBe(userB.id);
+        socketA.close();
+    });
+
+    it("refuses chat once the partner has blocked the sender", async () => {
+        const { cookie: cookieA, user: userA } = await registerAndGetCookie("blocka@example.com");
+        const { cookie: cookieB, user: userB } = await registerAndGetCookie("blockb@example.com");
+        await createActiveMatch(userA.id, userB.id);
+
+        const blockRes = await request(app).post(`/api/blocks/${userA.id}`).set("Cookie", cookieB);
+        expect(blockRes.status).toBeLessThan(300);
+
+        const socketA = await connectClient(cookieA);
+
+        const errorEvent = new Promise((resolve) => socketA.on("chat:error", resolve));
+        socketA.emit("chat:send_message", { recipientId: userB.id, content: "Still there?" });
+
+        expect((await errorEvent).code).toBe("CHAT_NOT_ALLOWED");
+        socketA.close();
+    });
+});
