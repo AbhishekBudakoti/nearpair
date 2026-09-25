@@ -20,16 +20,18 @@ Create a `.env` in this folder with:
 ```
 VITE_API_URL=http://localhost:3000/api
 VITE_GOOGLE_CLIENT_ID=<your Google OAuth Client ID>
+# optional — only needed when VITE_API_URL is a relative proxy path (production)
+VITE_SOCKET_URL=http://localhost:3000
 ```
 
-`VITE_API_URL` is required for the Axios client (`src/api/client.js`) to reach the backend. `VITE_GOOGLE_CLIENT_ID` is optional — the "Continue with Google" button only renders when it's set.
+`VITE_API_URL` is required for the Axios client (`src/api/client.js`) to reach the backend. `VITE_GOOGLE_CLIENT_ID` is optional — the "Continue with Google" button only renders when it's set. `VITE_SOCKET_URL` is the backend origin for Socket.IO; if unset it's derived by stripping `/api` from `VITE_API_URL`, which is all local dev needs.
 
 ## Structure
 
 ```
 src/
   api/          axios instance (withCredentials: true — auth is an httpOnly cookie)
-  components/   shared UI: nav chrome, modals, cards, auth layout, page banners
+  components/   shared UI: nav chrome, modals (incl. UserProfileModal), cards, chat window, auth layout, page banners
   context/      AuthContext (who's logged in) and SocketContext (real-time connection)
   pages/        one file per route, including an admin/ subfolder for the admin dashboard
   utils/        client-side helpers (password strength check, avatar image resizing)
@@ -48,4 +50,9 @@ Routing lives in `src/App.jsx`: public marketing/legal pages (Landing, About, Co
 
 ## Deployment
 
-Deployed to Vercel; `vercel.json` in this folder rewrites all paths to `index.html` so client-side routing works on a hard refresh/direct link. The backend is deployed separately (Render) — `VITE_API_URL` in Vercel's project settings must point at that deployed API, and the API's `GOOGLE_CLIENT_ID`/CORS origin must in turn be configured for the deployed frontend origin for login and Google Sign-In to work in production.
+Deployed to Vercel; the backend is deployed separately on Render. `vercel.json` in this folder does two things:
+
+1. Rewrites `/api/*` to the Render API (`https://nearpair.onrender.com/api/*`), so REST calls are same-origin and the httpOnly auth cookie is first-party — required for iOS Safari, which blocks third-party cookies.
+2. Rewrites everything else to `index.html`, so client-side routing works on a hard refresh/direct link.
+
+In Vercel's project settings, set `VITE_API_URL=/api` (the proxy path) and `VITE_SOCKET_URL` to the Render origin. Socket.IO can't go through the rewrite, so it connects to Render directly and authenticates with a short-lived token from `GET /api/auth/socket-token` instead of the cookie. The API's `GOOGLE_CLIENT_ID`/CORS origin must also be configured for the deployed frontend origin for login and Google Sign-In to work in production.
