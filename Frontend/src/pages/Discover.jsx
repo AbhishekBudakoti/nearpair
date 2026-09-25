@@ -100,7 +100,6 @@ const Discover = () => {
   const [loading, setLoading] = useState(false);
   const [locating, setLocating] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const [userProfileCity, setUserProfileCity] = useState("");
   const [requestStatus, setRequestStatus] = useState({});
 
   const [availableCities, setAvailableCities] = useState(KNOWN_CITIES);
@@ -169,7 +168,6 @@ const Discover = () => {
       .then(({ data }) => {
         const city = data.data?.profile?.location?.city || "";
         if (city) {
-          setUserProfileCity(city);
           setFilters((prev) => {
             const updated = { ...prev, city };
             runSearch(null, updated);

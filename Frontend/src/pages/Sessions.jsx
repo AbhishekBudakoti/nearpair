@@ -184,15 +184,12 @@ const Sessions = () => {
   const [pendingReviewIds, setPendingReviewIds] = useState(new Set());
   const [reviewingSession, setReviewingSession] = useState(null);
 
-  const load = useCallback(async () => {
-    try {
-      const { data } = await apiClient.get("/sessions");
-      setSessions(data.data?.sessions || []);
-    } catch (err) {
-      setErrorMsg(err.response?.data?.message || "Failed to load sessions");
-    } finally {
-      setLoading(false);
-    }
+  const load = useCallback(() => {
+    return apiClient
+      .get("/sessions")
+      .then(({ data }) => setSessions(data.data?.sessions || []))
+      .catch((err) => setErrorMsg(err.response?.data?.message || "Failed to load sessions"))
+      .finally(() => setLoading(false));
   }, []);
 
   // Partner picker: POST /sessions needs a match id, which only

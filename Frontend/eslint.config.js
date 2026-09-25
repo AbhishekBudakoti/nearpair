@@ -13,6 +13,18 @@ export default defineConfig([
       reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
     ],
+    rules: {
+      // The context files export their hook next to the provider, and
+      // GoogleSignInButton exports an env-derived flag. Fast Refresh just
+      // does a full reload for those files, which is fine.
+      'react-refresh/only-export-components': [
+        'error',
+        {
+          allowConstantExport: true,
+          allowExportNames: ['useAuth', 'useSocket', 'useUserOnline', 'isGoogleSignInEnabled'],
+        },
+      ],
+    },
     languageOptions: {
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },

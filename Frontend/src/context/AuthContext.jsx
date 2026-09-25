@@ -36,24 +36,29 @@ export const AuthProvider = ({ children }) => {
    * Re-checks auth status against the backend. Call after login/register/logout
    * so every consumer (Navbar, ProtectedRoute, pages) re-renders in sync.
    */
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data } = await apiClient.get("/auth/me");
-      const nextUser = data.data?.user || null;
-      setUser(nextUser);
-      if (nextUser) {
-        await refreshAvatar();
-      } else {
+  const checkAuth = useCallback(() => {
+    return apiClient
+      .get("/auth/me")
+      .then(async ({ data }) => {
+        const nextUser = data.data?.user || null;
+        setUser(nextUser);
+        if (nextUser) {
+          await refreshAvatar();
+        } else {
+          setAvatarUrl("");
+        }
+      })
+      .catch(() => {
+        setUser(null);
         setAvatarUrl("");
-      }
-    } catch {
-      setUser(null);
-      setAvatarUrl("");
-    } finally {
-      setLoading(false);
-    }
+      })
+      .finally(() => setLoading(false));
   }, [refreshAvatar]);
+
+  const refresh = useCallback(() => {
+    setLoading(true);
+    return checkAuth();
+  }, [checkAuth]);
 
   const logout = useCallback(async () => {
     try {
@@ -66,9 +71,11 @@ export const AuthProvider = ({ children }) => {
 
   const clearAuthNotice = useCallback(() => setAuthNotice(""), []);
 
+  // `loading` already starts true, so the initial check skips refresh()'s
+  // setLoading(true).
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    checkAuth();
+  }, [checkAuth]);
 
   // The API client fires this when any request comes back ACCOUNT_SUSPENDED;
   // dropping the user sends ProtectedRoute back to /login with the reason.

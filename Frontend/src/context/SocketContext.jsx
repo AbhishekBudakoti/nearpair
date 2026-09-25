@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import apiClient, { SOCKET_URL } from "../api/client";
 import { useAuth } from "./AuthContext";
@@ -61,13 +61,15 @@ export const SocketProvider = ({ children }) => {
     });
   };
 
-  const stopTyping = (recipientId) => {
+  // Memoized so ChatWindow can list it as an effect dependency without
+  // re-running its unmount cleanup on every render.
+  const stopTyping = useCallback((recipientId) => {
     if (!socket || !connected || !recipientId) return;
 
     socket.emit("chat:stop_typing", {
       recipientId,
     });
-  };
+  }, [socket, connected]);
 
   /**
    * Fetches initial notifications and unread count from the backend REST API endpoint.
@@ -91,7 +93,7 @@ export const SocketProvider = ({ children }) => {
    * can change it (accept/reject are the current user's own actions and
    * refresh this directly rather than waiting on a notification).
    */
-  const fetchPendingRequestCount = async () => {
+  const fetchPendingRequestCount = useCallback(async () => {
     if (!userId) return;
     try {
       const { data } = await apiClient.get("/requests");
@@ -103,7 +105,7 @@ export const SocketProvider = ({ children }) => {
     } catch (error) {
       console.error("Error fetching pending request count:", error);
     }
-  };
+  }, [userId]);
 
   /**
    * Marks a single notification as read by notification ID.
@@ -157,12 +159,9 @@ export const SocketProvider = ({ children }) => {
   // Skipping this while logged out avoids a doomed handshake (the server
   // requires the auth cookie) that otherwise fires on every page load.
   useEffect(() => {
-    if (!userId) {
-      setSocket(null);
-      setConnected(false);
-      setOnlineUsers(new Set());
-      return;
-    }
+    // Logged-out state needs no reset here: the previous run's cleanup
+    // (below) already cleared socket/connected/onlineUsers on logout.
+    if (!userId) return;
 
     // Instantiate Socket.io client. `auth` as a function (rather than a
     // plain object) is called fresh before every (re)connection attempt —
@@ -180,13 +179,15 @@ export const SocketProvider = ({ children }) => {
           .catch(() => cb({}));
       },
     });
-    setSocket(newSocket);
 
     // --- CONNECTION HANDLERS ---
 
-    // Triggered when socket connects successfully
+    // Triggered when socket connects successfully. The socket is only
+    // exposed to consumers from here on — every one of them already
+    // requires `connected` before using it.
     newSocket.on("connect", () => {
       console.log("Socket Connected:", newSocket.id);
+      setSocket(newSocket);
       setConnected(true);
       fetchNotifications();
       fetchPendingRequestCount();
@@ -316,8 +317,11 @@ export const SocketProvider = ({ children }) => {
     // Clean up socket instance on unmount, logout, or user change
     return () => {
       newSocket.disconnect();
+      setSocket(null);
+      setConnected(false);
+      setOnlineUsers(new Set());
     };
-  }, [userId]);
+  }, [userId, fetchPendingRequestCount]);
 
   /**
    * Manually reconnects the socket client if disconnected.

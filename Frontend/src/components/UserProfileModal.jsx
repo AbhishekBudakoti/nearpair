@@ -27,9 +27,9 @@ const UserProfileModal = ({ userId, userName, initialProfile, onClose }) => {
   useEffect(() => {
     if (!userId || initialProfile) return;
 
+    // No loading/error reset needed: the modal mounts fresh each time it
+    // opens, so its initial state already matches.
     let mounted = true;
-    setLoading(true);
-    setErrorMsg("");
 
     apiClient
       .get(`/profile/user/${userId}`)

@@ -69,16 +69,14 @@ const Requests = () => {
   const [errorMsg, setErrorMsg] = useState("");
   const [busyId, setBusyId] = useState(null);
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const { data } = await apiClient.get("/requests");
-      setRequests(data.data?.requests || []);
-    } catch (err) {
-      setErrorMsg(err.response?.data?.message || "Failed to load requests");
-    } finally {
-      setLoading(false);
-    }
+  // Reloads after an accept/reject keep the current list on screen rather
+  // than flashing the loading state; `loading` only covers the first fetch.
+  const load = () => {
+    return apiClient
+      .get("/requests")
+      .then(({ data }) => setRequests(data.data?.requests || []))
+      .catch((err) => setErrorMsg(err.response?.data?.message || "Failed to load requests"))
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {

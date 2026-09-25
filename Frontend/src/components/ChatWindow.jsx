@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSocket } from "../context/SocketContext";
 import apiClient from "../api/client";
 import UserProfileModal from "./UserProfileModal";
@@ -90,43 +90,34 @@ const ChatWindow = ({ userId, userName }) => {
         };
     }, [userId]);
 
-    // Add new real-time messages
-    useEffect(() => {
-        if (!userId) return;
+    // Fetched history plus this conversation's real-time messages, derived
+    // rather than copied into state (chatMessages only ever grows).
+    const messages = useMemo(() => {
+        if (!userId) return history;
 
-        const newMessages = chatMessages.filter((msg) => {
+        const seenIds = new Set(history.map((item) => item._id));
+
+        const liveMessages = chatMessages.filter((msg) => {
             const senderId = msg.sender?._id || msg.sender;
             const recipientId = msg.recipient?._id || msg.recipient;
-
-            return (
+            const inThisChat =
                 senderId?.toString() === userId.toString() ||
-                recipientId?.toString() === userId.toString()
-            );
+                recipientId?.toString() === userId.toString();
+
+            if (!inThisChat || seenIds.has(msg._id)) return false;
+            seenIds.add(msg._id);
+            return true;
         });
 
-        setHistory((previousMessages) => {
-            const existingIds = new Set(
-                previousMessages.map((item) => item._id)
-            );
-
-            const uniqueMessages = newMessages.filter(
-                (item) => !existingIds.has(item._id)
-            );
-
-            if (uniqueMessages.length === 0) {
-                return previousMessages;
-            }
-
-            return [...previousMessages, ...uniqueMessages];
-        });
-    }, [chatMessages, userId]);
+        return liveMessages.length === 0 ? history : [...history, ...liveMessages];
+    }, [history, chatMessages, userId]);
 
     // Auto-scroll to latest message
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({
             behavior: "smooth",
         });
-    }, [history, isOtherUserTyping]);
+    }, [messages, isOtherUserTyping]);
 
     // Cleanup typing timer when component unmounts
     useEffect(() => {
@@ -139,7 +130,7 @@ const ChatWindow = ({ userId, userName }) => {
                 stopTyping(userId);
             }
         };
-    }, [userId]);
+    }, [userId, stopTyping]);
 
     const handleSendMessage = (event) => {
         event.preventDefault();
@@ -365,10 +356,10 @@ const ChatWindow = ({ userId, userName }) => {
                     padding: "15px",
                 }}
             >
-                {history.length === 0 ? (
+                {messages.length === 0 ? (
                     <p>No messages yet.</p>
                 ) : (
-                    history.map((item) => {
+                    messages.map((item) => {
                         const senderId =
                             item.sender?._id || item.sender;
 
